@@ -1,8 +1,9 @@
-const express = require('express')
-const app = express()
+import Express from 'express'
+
+const app = Express()
 const port = 3000
 
-app.get('/', (_, res) => {
+app.get('/', (_: Express.Request, res: Express.Response) => {
   res.send('Hello World!')
 })
 
