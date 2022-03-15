@@ -1,5 +1,5 @@
 **/node_modules/
 **/public/build/
 server/**/*.js
-
+tic-tac-toe-game/**/*.js
 .DS_Store
