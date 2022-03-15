@@ -5,7 +5,7 @@
   const onCellClick = (cell, index) => {
     game.play(index)
     if (game.isGameOver || isDraw || board[index] !== null) return
-    cell.innerText = game.playerTurn() === Player.O ? 'O' : 'X'
+    cell.innerText = game.playerTurn()
   }
   let allCells
   onMount(() => (allCells = document.querySelectorAll('.board > div')))
@@ -22,7 +22,7 @@
     {/each}
   </div>
   <div>
-    {`player turn: ${game.playerTurn() === Player.O ? 'O' : 'X'}`}
+    {`player turn: ${game.playerTurn()}`}
   </div>
   <button on:click={reset} style="width:fit-content"> Reset </button>
   {#if game.isPlayer_O_Winning}
