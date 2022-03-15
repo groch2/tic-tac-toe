@@ -1,16 +1,6 @@
 <script>
   import { onMount } from 'svelte'
-  import { getArrayRange as getRange } from './utility.js'
-  const forwardSlashDiagonale = getRange(2, 7, 2)
-  const backwardSlashDiagonale = getRange(0, 9, 4)
-  const columns = getRange(0, 3, 1).map((c) => getRange(c, c + 7, 3))
-  const rows = getRange(0, 7, 3).map((c) => getRange(c, c + 3, 1))
-  const allAxes = [
-    forwardSlashDiagonale,
-    backwardSlashDiagonale,
-    ...columns,
-    ...rows,
-  ]
+  import { allAxes } from '../../tic-tac-toe-game/tic-tac-toe-game'
   const board = new Array(9).fill(null)
   let playerTurn = true
   let [is_X_PlayerWin, is_O_PlayerWin, isDraw, isGameOver] = new Array(4).fill(
