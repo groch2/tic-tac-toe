@@ -21,9 +21,13 @@ export default (expressServer: http.Server) => {
     })
   })
 
+  let nbConnectedClients = 0
   websocketServer.on(
     'connection',
     function connection(websocketConnection, connectionRequest) {
+      nbConnectedClients +=
+        websocketConnection.readyState === WebSocket.OPEN ? 1 : 0
+      console.log({ nbConnectedClients })
       const queryStringParameters = connectionRequest?.url?.split('?')
       if (queryStringParameters) {
         const [_, params] = queryStringParameters
@@ -40,9 +44,28 @@ export default (expressServer: http.Server) => {
         const responseMessage = JSON.stringify({
           message: getRandomWord(10),
         })
+        console.log({ nbClients: websocketServer.clients.size })
+        console.log({ nbConnectedClients })
         websocketServer.clients.forEach((c) => {
           c.send(responseMessage)
         })
+      })
+      websocketConnection.on('close', function (this, code, reason) {
+        nbConnectedClients -= (() => {
+          switch (this.readyState) {
+            case WebSocket.CLOSING:
+            case WebSocket.CLOSED:
+              return 1
+            default:
+              return 0
+          }
+        })()
+        console.log({ nbConnectedClients })
+        console.log({ reasonLength: reason.length })
+        const textReason = reason.toString('utf-8')
+        console.log(
+          `closing connection: ${code}, reason: ${textReason}, state: ${this.readyState}`
+        )
       })
     }
   )
