@@ -50,9 +50,9 @@ export default (expressServer: http.Server) => {
           c.send(responseMessage)
         })
       })
-      websocketConnection.on('close', function (this, code, reason) {
+      websocketConnection.on('close', (code, reason) => {
         nbConnectedClients -= (() => {
-          switch (this.readyState) {
+          switch (websocketConnection.readyState) {
             case WebSocket.CLOSING:
             case WebSocket.CLOSED:
               return 1
@@ -64,7 +64,7 @@ export default (expressServer: http.Server) => {
         console.log({ reasonLength: reason.length })
         const textReason = reason.toString('utf-8')
         console.log(
-          `closing connection: ${code}, reason: ${textReason}, state: ${this.readyState}`
+          `closing connection: ${code}, reason: ${textReason}, state: ${websocketConnection.readyState}`
         )
       })
     }
