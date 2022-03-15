@@ -1,4 +1,8 @@
-const getGeneratorRange = function* (start: number, stop: number, step: number) {
+const getGeneratorRange = function* (
+  start: number,
+  stop: number,
+  step: number
+) {
   let n = start
   while (n < stop) {
     yield n
@@ -40,10 +44,12 @@ export class Game {
   public get isPlayer_X_Winning() {
     return this.isPlayerWinning(Player.X)
   }
-  public isDraw() {
-    !this.isPlayer_O_Winning &&
+  public get isDraw() {
+    return (
+      !this.isPlayer_O_Winning &&
       !this.isPlayer_X_Winning &&
       this.board.every((value) => value !== null)
+    )
   }
   _currentPlayer: Player
   public get playerTurn() {
@@ -54,7 +60,15 @@ export class Game {
       throw new Error(ErrorMessages.CELL_ALREADY_OCCUPIED)
     }
     this.board[cellIndex] = this._currentPlayer === Player.O
+    if (this.isPlayer_O_Winning || this.isPlayer_X_Winning || this.isDraw) {
+      this._isGameOver = true
+      return
+    }
     this._currentPlayer = this._currentPlayer === Player.O ? Player.X : Player.O
+  }
+  _isGameOver = false
+  public get isGameOver() {
+    return this._isGameOver
   }
 }
 export class ErrorMessages {

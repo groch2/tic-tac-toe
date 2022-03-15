@@ -1,46 +1,17 @@
 <script>
   import { onMount } from 'svelte'
-  import { allAxes } from '../../tic-tac-toe-game/tic-tac-toe-game'
-  const board = new Array(9).fill(null)
-  let playerTurn = true
-  let [is_X_PlayerWin, is_O_PlayerWin, isDraw, isGameOver] = new Array(4).fill(
-    false
-  )
-  const axeValues = (axe) => axe.map((index) => board[index])
+  import { Game, Player } from '../../tic-tac-toe-game/tic-tac-toe-game'
+  let game = new Game()
   const onCellClick = (cell, index) => {
-    if (isGameOver || isDraw || board[index] !== null) return
-    board[index] = playerTurn
-    cell.innerText = playerTurn ? 'O' : 'X'
-    is_O_PlayerWin = allAxes.some((axe) =>
-      axeValues(axe).every((value) => value === true)
-    )
-    if (is_O_PlayerWin) {
-      isGameOver = true
-      return
-    }
-    is_X_PlayerWin = allAxes.some((axe) =>
-      axeValues(axe).every((value) => value === false)
-    )
-    if (is_X_PlayerWin) {
-      isGameOver = true
-      return
-    }
-    isDraw =
-      !is_O_PlayerWin &&
-      !is_X_PlayerWin &&
-      board.every((value) => value !== null)
-    if (isDraw) return
-    playerTurn = !playerTurn
+    game.play(index)
+    if (game.isGameOver || isDraw || board[index] !== null) return
+    cell.innerText = game.playerTurn() === Player.O ? 'O' : 'X'
   }
   let allCells
   onMount(() => (allCells = document.querySelectorAll('.board > div')))
   const reset = () => {
     allCells.forEach((cell) => (cell.innerText = ''))
-    board.fill(null)
-    playerTurn = true
-    ;[is_X_PlayerWin, is_O_PlayerWin, isDraw, isGameOver] = new Array(3).fill(
-      false
-    )
+    game = new Game()
   }
 </script>
 
@@ -51,14 +22,14 @@
     {/each}
   </div>
   <div>
-    {`player turn: ${playerTurn ? 'O' : 'X'}`}
+    {`player turn: ${game.playerTurn() === Player.O ? 'O' : 'X'}`}
   </div>
   <button on:click={reset} style="width:fit-content"> Reset </button>
-  {#if is_O_PlayerWin}
+  {#if game.isPlayer_O_Winning}
     <div>Player O as won !</div>
-  {:else if is_X_PlayerWin}
+  {:else if game.isPlayer_X_Winning}
     <div>Player X as won !</div>
-  {:else if isDraw}
+  {:else if game.isDraw}
     <div>Draw game...</div>
   {/if}
 </div>
