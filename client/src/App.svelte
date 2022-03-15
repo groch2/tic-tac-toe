@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte'
-  import { Game, Player } from '../../tic-tac-toe-game/tic-tac-toe-game'
+  import { Game } from '../../tic-tac-toe-game/tic-tac-toe-game'
   let game = new Game()
   const onCellClick = (cell, index) => {
     game.play(index)
