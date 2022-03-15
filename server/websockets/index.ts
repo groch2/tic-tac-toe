@@ -2,6 +2,13 @@ import http from 'http'
 import WebSocket from 'ws'
 import queryString from 'query-string'
 
+const aCodePoint = <number>'A'.codePointAt(0)
+const getRandomWord = (length: number) =>
+  new Array(length)
+    .fill(0)
+    .map(() => String.fromCharCode(Math.floor(Math.random() * 26) + aCodePoint))
+    .join('')
+
 export default (expressServer: http.Server) => {
   const websocketServer = new WebSocket.Server({
     noServer: true,
@@ -30,9 +37,12 @@ export default (expressServer: http.Server) => {
       websocketConnection.on('message', (message) => {
         const parsedMessage = JSON.parse(`${message}`)
         console.log(parsedMessage)
-        websocketConnection.send(
-          JSON.stringify({ message: 'There be gold in them thar hills.' })
-        )
+        const responseMessage = JSON.stringify({
+          message: getRandomWord(10),
+        })
+        websocketServer.clients.forEach((c) => {
+          c.send(responseMessage)
+        })
       })
     }
   )
