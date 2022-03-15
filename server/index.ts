@@ -1,12 +1,18 @@
-import Express from 'express'
+import express from 'express'
+import websockets from './websockets'
 
-const app = Express()
+const app = express()
 const port = 3000
 
-app.get('/', (_: Express.Request, res: Express.Response) => {
-  res.send('Hello World!')
+const server = app.listen(port, () => {
+  console.log("c'est parti")
+  if (process.send) {
+    process.send(`Server running at http://localhost:${port}\n\n`)
+  }
 })
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+websockets(server)
+
+process.on('message', (message) => {
+  console.log(message)
 })
