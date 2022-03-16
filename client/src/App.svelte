@@ -3,7 +3,7 @@
   import { GameEngine as Game } from '../../game-engine/game-engine'
   let game = new Game()
   const onCellClick = (cell, index) => {
-    if (game.isGameOver || game.isDraw || game.isCellOccupied(index)) return
+    if (game.isGameOver || game.isCellOccupied(index)) return
     cell.innerText = game.playerTurn
     game.play(index)
     game = game
