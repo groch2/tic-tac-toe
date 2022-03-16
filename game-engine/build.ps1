@@ -1,1 +1,0 @@
-tsc --target ES5 --downlevelIteration .\game-engine.ts

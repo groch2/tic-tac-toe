@@ -22,9 +22,9 @@ const allAxes: number[][] = [
   ...columns,
   ...rows,
 ]
-export enum Player {
-  O,
-  X,
+enum Player {
+  O = 'O',
+  X = 'X',
 }
 export class GameEngine {
   private board: (boolean | null)[]
@@ -53,9 +53,12 @@ export class GameEngine {
   }
   _currentPlayer: Player
   public get playerTurn() {
-    return this._currentPlayer
+    return `${this._currentPlayer}`
   }
   public play(cellIndex: number) {
+    if (this.isGameOver) {
+      throw new Error(ErrorMessages.GAME_OVER)
+    }
     if (this.board[cellIndex] !== null) {
       throw new Error(ErrorMessages.CELL_ALREADY_OCCUPIED)
     }
@@ -70,8 +73,12 @@ export class GameEngine {
   public get isGameOver() {
     return this._isGameOver
   }
+  isCellOccupied(cellIndex: number) {
+    return this.board[cellIndex] !== null
+  }
 }
 export class ErrorMessages {
+  public static readonly GAME_OVER = 'La partie est déjà terminée'
   public static readonly CELL_ALREADY_OCCUPIED =
     'Cet emplacement a déjà été joué'
 }
