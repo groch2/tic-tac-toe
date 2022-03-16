@@ -26,7 +26,7 @@ export enum Player {
   O,
   X,
 }
-export class Game {
+export class GameEngine {
   private board: (boolean | null)[]
   public constructor() {
     this.board = new Array(9).fill(null)
