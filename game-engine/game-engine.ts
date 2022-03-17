@@ -27,12 +27,15 @@ enum Player {
   X = 'X',
 }
 export class GameEngine {
-  private board: (Player | null)[]
-  public constructor() {
-    this.board = new Array(9).fill(null)
+  private _board: (Player | null)[]
+  public get board() {
+    return [...this._board]
+  }
+  public constructor(public readonly gameName: string) {
+    this._board = new Array(9).fill(null)
     this._currentPlayer = Player.O
   }
-  axeValues = (axe: number[]) => axe.map((index) => this.board[index])
+  axeValues = (axe: number[]) => axe.map((index) => this._board[index])
   isPlayerWinning(player: Player) {
     return allAxes.some((axe) =>
       this.axeValues(axe).every((value) => value === player)
@@ -48,7 +51,7 @@ export class GameEngine {
     return (
       !this.isPlayer_O_Winning &&
       !this.isPlayer_X_Winning &&
-      this.board.every((value) => value !== null)
+      this._board.every((value) => value !== null)
     )
   }
   _currentPlayer: Player
@@ -59,10 +62,10 @@ export class GameEngine {
     if (this.isGameOver) {
       throw new Error(ErrorMessages.GAME_OVER)
     }
-    if (this.board[cellIndex] !== null) {
+    if (this._board[cellIndex] !== null) {
       throw new Error(ErrorMessages.CELL_ALREADY_OCCUPIED)
     }
-    this.board[cellIndex] = this._currentPlayer
+    this._board[cellIndex] = this._currentPlayer
     if (this.isPlayer_O_Winning || this.isPlayer_X_Winning || this.isDraw) {
       this._isGameOver = true
       return
@@ -74,7 +77,7 @@ export class GameEngine {
     return this._isGameOver
   }
   isCellOccupied(cellIndex: number) {
-    return this.board[cellIndex] !== null
+    return this._board[cellIndex] !== null
   }
 }
 export class ErrorMessages {

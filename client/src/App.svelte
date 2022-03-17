@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { GameEngine as Game } from '../../game-engine/game-engine'
-  let game = new Game()
+  let game = new Game('test-game')
   const onCellClick = (cell: HTMLElement, index: number) => {
+    console.log(`click on cell: ${index}`)
     if (game.isGameOver || game.isCellOccupied(index)) return
     cell.innerText = game.playerTurn
     game.play(index)
@@ -11,8 +12,9 @@
   let allCells: NodeListOf<Element>
   onMount(() => (allCells = document.querySelectorAll('.board > div')))
   const reset = () => {
+    console.log('reset')
     allCells.forEach((cell: HTMLElement) => (cell.innerText = ''))
-    game = new Game()
+    game = new Game('test-game')
   }
 </script>
 

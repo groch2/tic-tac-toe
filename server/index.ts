@@ -1,6 +1,7 @@
 import express from 'express'
 import websockets from './websockets'
 import bodyParser from 'body-parser'
+import { GameEngine as Game } from '../game-engine/game-engine'
 
 const app = express()
 app.use(bodyParser.json())
@@ -24,12 +25,19 @@ interface CreateGameRequest {
   'game-name': string
 }
 
+const ongoingGames: Game[] = []
+
 app.post('/create-game', (req, res) => {
   const {
     'game-creator-name': gameCreatorName,
     'game-name': gameName,
   }: CreateGameRequest = req.body
   const game = { gameCreatorName, gameName }
+  ongoingGames.push(new Game(gameName))
   console.log(game)
   res.send(game)
+})
+
+app.get('/ongoing-games', (_, res) => {
+  res.json(ongoingGames)
 })
