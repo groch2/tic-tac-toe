@@ -27,7 +27,7 @@ enum Player {
   X = 'X',
 }
 export class GameEngine {
-  private board: (boolean | null)[]
+  private board: (Player | null)[]
   public constructor() {
     this.board = new Array(9).fill(null)
     this._currentPlayer = Player.O
@@ -35,7 +35,7 @@ export class GameEngine {
   axeValues = (axe: number[]) => axe.map((index) => this.board[index])
   isPlayerWinning(player: Player) {
     return allAxes.some((axe) =>
-      this.axeValues(axe).every((value) => value === (player === Player.O))
+      this.axeValues(axe).every((value) => value === player)
     )
   }
   public get isPlayer_O_Winning() {
@@ -62,7 +62,7 @@ export class GameEngine {
     if (this.board[cellIndex] !== null) {
       throw new Error(ErrorMessages.CELL_ALREADY_OCCUPIED)
     }
-    this.board[cellIndex] = this._currentPlayer === Player.O
+    this.board[cellIndex] = this._currentPlayer
     if (this.isPlayer_O_Winning || this.isPlayer_X_Winning || this.isDraw) {
       this._isGameOver = true
       return
