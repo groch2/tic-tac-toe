@@ -19,8 +19,17 @@ process.on('message', (message) => {
   console.log(message)
 })
 
+interface CreateGameRequest {
+  'game-creator-name': string
+  'game-name': string
+}
+
 app.post('/create-game', (req, res) => {
-  const createGameRequest: { 'game-creator-name': string } = req.body
-  console.log({ 'game-creator-name': createGameRequest['game-creator-name'] })
-  res.send('coucou')
+  const {
+    'game-creator-name': gameCreatorName,
+    'game-name': gameName,
+  }: CreateGameRequest = req.body
+  const game = { gameCreatorName, gameName }
+  console.log(game)
+  res.send(game)
 })
