@@ -1,17 +1,14 @@
 import express from 'express'
 import websockets from './websockets'
 import bodyParser from 'body-parser'
-import { GameEngine as Game } from '../game-engine/game-engine'
+import { GameEngine as Game, Player } from '../game-engine/game-engine'
 
 const app = express()
 app.use(bodyParser.json())
 
 const port = 3000
 const server = app.listen(port, () => {
-  console.log("c'est parti")
-  if (process.send) {
-    process.send(`Server running at http://localhost:${port}\n\n`)
-  }
+  console.log(`Server running at http://localhost:${port}`)
 })
 
 websockets(server)
@@ -29,7 +26,7 @@ interface CreateGameRequest {
 interface PlayGameRequest {
   'game-name': string
   'player-name': string
-  'cell-index': string
+  'cell-index': number
 }
 
 const ongoingGames: { [gameName: string]: Game } = {}
@@ -52,6 +49,27 @@ app.post('/play-game', (req, res) => {
     'cell-index': cellIndex,
   }: PlayGameRequest = req.body
   const game = ongoingGames[gameName]
+  if (!game) {
+    res.status(404).send(`The game named: "${gameName}" cannot be found.`)
+    return
+  }
+  if (game.isGameOver) {
+    res.status(400).send(`The game: "${gameName}" is over`)
+    return
+  }
+  if (
+    (game.currentPlayer === Player.O && game.playerO_Name !== playerName) ||
+    (game.currentPlayer === Player.X && game.playerX_Name !== playerName)
+  ) {
+    res.status(400).send(`Wrong player: "${playerName}"`)
+    return
+  }
+  if (game.isCellOccupied(cellIndex)) {
+    res.status(400).send(`Position already occupied: "${cellIndex}"`)
+    return
+  }
+  game.play(cellIndex)
+  res.sendStatus(200)
 })
 
 app.get('/ongoing-games', (_, res) => {

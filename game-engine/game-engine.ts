@@ -22,7 +22,7 @@ const allAxes: number[][] = [
   ...columns,
   ...rows,
 ]
-enum Player {
+export enum Player {
   O = 'O',
   X = 'X',
 }
