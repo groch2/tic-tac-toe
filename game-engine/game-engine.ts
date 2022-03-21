@@ -31,31 +31,35 @@ export class GameEngine {
   public get board() {
     return [...this._board]
   }
-  public constructor(public readonly gameName: string) {
+  public constructor(
+    public readonly gameName: string,
+    public readonly playerO_Name: string,
+    public readonly playerX_Name: string
+  ) {
     this._board = new Array(9).fill(null)
     this._currentPlayer = Player.O
   }
-  axeValues = (axe: number[]) => axe.map((index) => this._board[index])
-  isPlayerWinning(player: Player) {
+  private axeValues = (axe: number[]) => axe.map((index) => this._board[index])
+  private isPlayerWinning(player: Player) {
     return allAxes.some((axe) =>
       this.axeValues(axe).every((value) => value === player)
     )
   }
-  public get isPlayer_O_Winning() {
+  public get isPlayerO_Winning() {
     return this.isPlayerWinning(Player.O)
   }
-  public get isPlayer_X_Winning() {
+  public get isPlayerX_Winning() {
     return this.isPlayerWinning(Player.X)
   }
   public get isDraw() {
     return (
-      !this.isPlayer_O_Winning &&
-      !this.isPlayer_X_Winning &&
+      !this.isPlayerO_Winning &&
+      !this.isPlayerX_Winning &&
       this._board.every((value) => value !== null)
     )
   }
-  _currentPlayer: Player
-  public get playerTurn() {
+  private _currentPlayer: Player
+  public get currentPlayer() {
     return `${this._currentPlayer}`
   }
   public play(cellIndex: number) {
@@ -66,18 +70,33 @@ export class GameEngine {
       throw new Error(ErrorMessages.CELL_ALREADY_OCCUPIED)
     }
     this._board[cellIndex] = this._currentPlayer
-    if (this.isPlayer_O_Winning || this.isPlayer_X_Winning || this.isDraw) {
+    if (this.isPlayerO_Winning || this.isPlayerX_Winning || this.isDraw) {
       this._isGameOver = true
       return
     }
     this._currentPlayer = this._currentPlayer === Player.O ? Player.X : Player.O
   }
-  _isGameOver = false
+  private _isGameOver = false
   public get isGameOver() {
     return this._isGameOver
   }
-  isCellOccupied(cellIndex: number) {
+  public isCellOccupied(cellIndex: number) {
     return this._board[cellIndex] !== null
+  }
+  toJSON() {
+    return Object.fromEntries(
+      [
+        'gameName',
+        'playerO_Name',
+        'playerX_Name',
+        'board',
+        'currentPlayer',
+        'isPlayerO_Winning',
+        'isPlayerX_Winning',
+        'isDraw',
+        'isGameOver',
+      ].map((prop) => [prop, (<any>this)[prop]])
+    )
   }
 }
 export class ErrorMessages {

@@ -21,23 +21,39 @@ process.on('message', (message) => {
 })
 
 interface CreateGameRequest {
-  'game-creator-name': string
+  'player-O-name': string
+  'player-X-name': string
   'game-name': string
 }
 
-const ongoingGames: Game[] = []
+interface PlayGameRequest {
+  'game-name': string
+  'player-name': string
+  'cell-index': string
+}
+
+const ongoingGames: { [gameName: string]: Game } = {}
 
 app.post('/create-game', (req, res) => {
   const {
-    'game-creator-name': gameCreatorName,
     'game-name': gameName,
+    'player-O-name': playerO_Name,
+    'player-X-name': playerX_Name,
   }: CreateGameRequest = req.body
-  const game = { gameCreatorName, gameName }
-  ongoingGames.push(new Game(gameName))
-  console.log(game)
-  res.send(game)
+  ongoingGames[gameName] = new Game(gameName, playerO_Name, playerX_Name)
+  console.log(ongoingGames[gameName])
+  res.send(ongoingGames[gameName])
+})
+
+app.post('/play-game', (req, res) => {
+  const {
+    'game-name': gameName,
+    'player-name': playerName,
+    'cell-index': cellIndex,
+  }: PlayGameRequest = req.body
+  const game = ongoingGames[gameName]
 })
 
 app.get('/ongoing-games', (_, res) => {
-  res.json(ongoingGames)
+  res.json(Object.values(ongoingGames).map((game) => JSON.stringify(game)))
 })
