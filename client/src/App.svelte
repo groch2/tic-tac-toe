@@ -1,20 +1,28 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { GameEngine as Game } from '../../game-engine/game-engine'
-  let game = new Game('test-game')
+  import {
+    GameEngine as Game,
+    getRandomWord,
+  } from '../../game-engine/game-engine'
+  const newGame = () => {
+    const gameName = getRandomWord(10)
+    const playerO_Name = getRandomWord(10)
+    const playerX_Name = getRandomWord(10)
+    return new Game(gameName, playerO_Name, playerX_Name)
+  }
+  let game = newGame()
   const onCellClick = (cell: HTMLElement, index: number) => {
     console.log(`click on cell: ${index}`)
     if (game.isGameOver || game.isCellOccupied(index)) return
-    cell.innerText = game.playerTurn
+    cell.innerText = game.currentPlayer
     game.play(index)
     game = game
   }
   let allCells: NodeListOf<Element>
   onMount(() => (allCells = document.querySelectorAll('.board > div')))
   const reset = () => {
-    console.log('reset')
     allCells.forEach((cell: HTMLElement) => (cell.innerText = ''))
-    game = new Game('test-game')
+    game = newGame()
   }
 </script>
 
@@ -25,12 +33,12 @@
     {/each}
   </div>
   <div>
-    {`player turn: ${game.playerTurn}`}
+    {`player turn: ${game.currentPlayer}`}
   </div>
   <button on:click={reset} style="width:fit-content"> Reset </button>
-  {#if game.isPlayer_O_Winning}
+  {#if game.isPlayerO_Winning}
     <div>Player O as won !</div>
-  {:else if game.isPlayer_X_Winning}
+  {:else if game.isPlayerX_Winning}
     <div>Player X as won !</div>
   {:else if game.isDraw}
     <div>Draw game...</div>
