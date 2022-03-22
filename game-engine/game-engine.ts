@@ -65,7 +65,7 @@ export class GameEngine {
   }
   private _currentPlayer: Player
   public get currentPlayer() {
-    return `${this._currentPlayer}`
+    return this._currentPlayer
   }
   public play(cellIndex: number) {
     if (this.isGameOver) {
@@ -100,7 +100,7 @@ export class GameEngine {
         'isPlayerX_Winning',
         'isDraw',
         'isGameOver',
-      ].map((prop) => [prop, (<any>this)[prop]])
+      ].map((prop) => [prop, (this as any)[prop]])
     )
   }
 }

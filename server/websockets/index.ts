@@ -1,16 +1,13 @@
 import http from 'http'
 import WebSocket from 'ws'
 import queryString from 'query-string'
-import { PlayGameRequest } from '../play-game-request'
+import { Player } from '../../game-engine/game-engine'
+import { NextPlayerGameEvent } from '../next-player-game-event'
 
-const aCodePoint = <number>'A'.codePointAt(0)
-const getRandomWord = (length: number) =>
-  new Array(length)
-    .fill(0)
-    .map(() => String.fromCharCode(Math.floor(Math.random() * 26) + aCodePoint))
-    .join('')
+let connectionsByGameName: Map<string, WebSocket.WebSocket[]>
 
 export default (expressServer: http.Server) => {
+  connectionsByGameName = new Map()
   const websocketServer = new WebSocket.Server({
     noServer: true,
     path: '/websockets',
@@ -30,24 +27,20 @@ export default (expressServer: http.Server) => {
       const queryStringParameters = connectionRequest?.url?.split('?')
       if (queryStringParameters) {
         const [_, params] = queryStringParameters
-        const connectionParams = queryString.parse(params)
-        // NOTE: connectParams are not used here but good to understand how to get
-        // to them if you need to pass data with the connection to identify it (e.g., a userId).
-        console.log(connectionParams)
+        const { 'game-name': gameName } = queryString.parse(params) as {
+          'game-name': string
+        }
+        if (!connectionsByGameName.has(gameName)) {
+          connectionsByGameName.set(gameName, new Array<WebSocket.WebSocket>())
+        }
+        const gameConnections = connectionsByGameName.get(
+          gameName
+        ) as WebSocket.WebSocket[]
+        if (gameConnections.length == 2) {
+          throw new Error(`the game: "${gameName}" already has 2 players`)
+        }
+        gameConnections.push(websocketConnection)
       }
-      websocketConnection.on('message', (message) => {
-        console.log('web sockets message')
-        const parsedMessage = JSON.parse(`${message}`)
-        console.log(parsedMessage)
-        const responseMessage = JSON.stringify({
-          message: getRandomWord(10),
-        })
-        console.log({ nbClients: websocketServer.clients.size })
-        console.log({ nbConnectedClients })
-        websocketServer.clients.forEach((c) => {
-          c.send(responseMessage)
-        })
-      })
       websocketConnection.on('close', (code, reason) => {
         nbConnectedClients -= (() => {
           switch (websocketConnection.readyState) {
@@ -67,11 +60,21 @@ export default (expressServer: http.Server) => {
       })
     }
   )
-  websocketServer.on('play-game', (playGameRequest: PlayGameRequest) => {
-    console.log('play game request in web sockets server', { playGameRequest })
-    websocketServer.clients.forEach((c) => {
-      c.send('the game is playing')
-    })
-  })
+  websocketServer.on(
+    'next-player-game-event',
+    (nextPlayerGameEvent: NextPlayerGameEvent) => {
+      const { 'game-name': gameName, 'next-player': nextPlayer } =
+        nextPlayerGameEvent
+      if (!connectionsByGameName.has(gameName)) {
+        throw new Error(`The game named: "${gameName}" cannot be found.`)
+      }
+      const gameConnections = connectionsByGameName.get(
+        gameName
+      ) as WebSocket.WebSocket[]
+      gameConnections[nextPlayer === Player.O ? 0 : 1].send(
+        JSON.stringify({ message: "it's your turn" })
+      )
+    }
+  )
   return websocketServer
 }

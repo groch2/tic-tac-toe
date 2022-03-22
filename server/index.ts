@@ -3,6 +3,7 @@ import websockets from './websockets'
 import bodyParser from 'body-parser'
 import { GameEngine as Game, Player } from '../game-engine/game-engine'
 import { PlayGameRequest } from './play-game-request'
+import { NextPlayerGameEvent } from './next-player-game-event'
 
 const app = express()
 app.use(bodyParser.json())
@@ -12,11 +13,8 @@ const server = app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`)
 })
 
+const ongoingGames: Map<string, Game> = new Map()
 const websocketsServer = websockets(server)
-
-process.on('message', (message) => {
-  console.log(message)
-})
 
 interface CreateGameRequest {
   'player-O-name': string
@@ -24,27 +22,24 @@ interface CreateGameRequest {
   'game-name': string
 }
 
-const ongoingGames: { [gameName: string]: Game } = {}
-
 app.post('/create-game', (req, res) => {
   const {
     'game-name': gameName,
     'player-O-name': playerO_Name,
     'player-X-name': playerX_Name,
   }: CreateGameRequest = req.body
-  ongoingGames[gameName] = new Game(gameName, playerO_Name, playerX_Name)
-  console.log(ongoingGames[gameName])
-  res.send(ongoingGames[gameName])
+  ongoingGames.set(gameName, new Game(gameName, playerO_Name, playerX_Name))
+  console.log(ongoingGames.get(gameName))
+  res.send(ongoingGames.get(gameName))
 })
 
 app.post('/play-game', (req, res) => {
-  const request: PlayGameRequest = req.body
   const {
     'game-name': gameName,
     'player-name': playerName,
     'cell-index': cellIndex,
-  }: PlayGameRequest = request
-  const game = ongoingGames[gameName]
+  }: PlayGameRequest = req.body
+  const game = ongoingGames.get(gameName)
   if (!game) {
     res.status(404).send(`The game named: "${gameName}" cannot be found.`)
     return
@@ -65,7 +60,13 @@ app.post('/play-game', (req, res) => {
     return
   }
   game.play(cellIndex)
-  websocketsServer.emit('play-game', request)
+  if (!game.isGameOver) {
+    const nextPlayerGameEvent: NextPlayerGameEvent = {
+      'game-name': gameName,
+      'next-player': game.currentPlayer,
+    }
+    websocketsServer.emit('next-player-game-event', nextPlayerGameEvent)
+  }
   res.sendStatus(200)
 })
 
