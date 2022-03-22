@@ -2,6 +2,7 @@ import express from 'express'
 import websockets from './websockets'
 import bodyParser from 'body-parser'
 import { GameEngine as Game, Player } from '../game-engine/game-engine'
+import { PlayGameRequest } from './play-game-request'
 
 const app = express()
 app.use(bodyParser.json())
@@ -11,7 +12,7 @@ const server = app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`)
 })
 
-websockets(server)
+const websocketsServer = websockets(server)
 
 process.on('message', (message) => {
   console.log(message)
@@ -21,12 +22,6 @@ interface CreateGameRequest {
   'player-O-name': string
   'player-X-name': string
   'game-name': string
-}
-
-interface PlayGameRequest {
-  'game-name': string
-  'player-name': string
-  'cell-index': number
 }
 
 const ongoingGames: { [gameName: string]: Game } = {}
@@ -43,11 +38,12 @@ app.post('/create-game', (req, res) => {
 })
 
 app.post('/play-game', (req, res) => {
+  const request: PlayGameRequest = req.body
   const {
     'game-name': gameName,
     'player-name': playerName,
     'cell-index': cellIndex,
-  }: PlayGameRequest = req.body
+  }: PlayGameRequest = request
   const game = ongoingGames[gameName]
   if (!game) {
     res.status(404).send(`The game named: "${gameName}" cannot be found.`)
@@ -69,6 +65,7 @@ app.post('/play-game', (req, res) => {
     return
   }
   game.play(cellIndex)
+  websocketsServer.emit('play-game', request)
   res.sendStatus(200)
 })
 

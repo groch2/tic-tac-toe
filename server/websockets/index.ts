@@ -1,6 +1,7 @@
 import http from 'http'
 import WebSocket from 'ws'
 import queryString from 'query-string'
+import { PlayGameRequest } from '../play-game-request'
 
 const aCodePoint = <number>'A'.codePointAt(0)
 const getRandomWord = (length: number) =>
@@ -14,13 +15,11 @@ export default (expressServer: http.Server) => {
     noServer: true,
     path: '/websockets',
   })
-
   expressServer.on('upgrade', (request, socket, head) => {
     websocketServer.handleUpgrade(request, socket, head, (websocket) => {
       websocketServer.emit('connection', websocket, request)
     })
   })
-
   let nbConnectedClients = 0
   websocketServer.on(
     'connection',
@@ -32,13 +31,12 @@ export default (expressServer: http.Server) => {
       if (queryStringParameters) {
         const [_, params] = queryStringParameters
         const connectionParams = queryString.parse(params)
-
         // NOTE: connectParams are not used here but good to understand how to get
         // to them if you need to pass data with the connection to identify it (e.g., a userId).
         console.log(connectionParams)
       }
-
       websocketConnection.on('message', (message) => {
+        console.log('web sockets message')
         const parsedMessage = JSON.parse(`${message}`)
         console.log(parsedMessage)
         const responseMessage = JSON.stringify({
@@ -69,6 +67,11 @@ export default (expressServer: http.Server) => {
       })
     }
   )
-
+  websocketServer.on('play-game', (playGameRequest: PlayGameRequest) => {
+    console.log('play game request in web sockets server', { playGameRequest })
+    websocketServer.clients.forEach((c) => {
+      c.send('the game is playing')
+    })
+  })
   return websocketServer
 }
