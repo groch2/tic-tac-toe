@@ -1,9 +1,9 @@
-import express from 'express'
-import websockets from './websockets'
 import bodyParser from 'body-parser'
+import express from 'express'
 import { GameEngine as Game, Player } from '../game-engine/game-engine'
-import { PlayGameRequest } from './play-game-request'
 import { NextPlayerGameEvent } from './next-player-game-event'
+import { PlayGameRequest } from './play-game-request'
+import websockets from './websockets'
 
 const app = express()
 app.use(bodyParser.json())

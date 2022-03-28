@@ -1,6 +1,6 @@
 import http from 'http'
-import WebSocket from 'ws'
 import queryString from 'query-string'
+import WebSocket from 'ws'
 import { Player } from '../../game-engine/game-engine'
 import { NextPlayerGameEvent } from '../next-player-game-event'
 
