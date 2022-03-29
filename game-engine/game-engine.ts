@@ -38,8 +38,8 @@ export class GameEngine {
   }
   public constructor(
     public readonly gameName: string,
-    public readonly playerO_Name: string,
-    public readonly playerX_Name: string
+    public playerO_Name?: string,
+    public playerX_Name?: string
   ) {
     this._board = new Array(9).fill(null)
     this._currentPlayer = Player.O

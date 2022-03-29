@@ -14,21 +14,15 @@ const server = app.listen(port, () => {
 })
 
 const ongoingGames: Map<string, Game> = new Map()
-const websocketsServer = websockets(server)
+const websocketsServer = websockets(server, ongoingGames)
 
 interface CreateGameRequest {
-  'player-O-name': string
-  'player-X-name': string
   'game-name': string
 }
 
 app.post('/create-game', (req, res) => {
-  const {
-    'game-name': gameName,
-    'player-O-name': playerO_Name,
-    'player-X-name': playerX_Name,
-  }: CreateGameRequest = req.body
-  ongoingGames.set(gameName, new Game(gameName, playerO_Name, playerX_Name))
+  const { 'game-name': gameName }: CreateGameRequest = req.body
+  ongoingGames.set(gameName, new Game(gameName))
   console.log(ongoingGames.get(gameName))
   res.send(ongoingGames.get(gameName))
 })
@@ -61,9 +55,13 @@ app.post('/play-game', (req, res) => {
   }
   game.play(cellIndex)
   if (!game.isGameOver) {
+    const row = Math.floor(cellIndex / 3)
+    const column = cellIndex - row * 3
     const nextPlayerGameEvent: NextPlayerGameEvent = {
       'game-name': gameName,
       'next-player': game.currentPlayer,
+      'last-move-cell': cellIndex,
+      'last-move-coordinates': JSON.stringify({ row, column }),
     }
     websocketsServer.emit('next-player-game-event', nextPlayerGameEvent)
   }
@@ -71,5 +69,11 @@ app.post('/play-game', (req, res) => {
 })
 
 app.get('/ongoing-games', (_, res) => {
-  res.json(Object.values(ongoingGames).map((game) => JSON.stringify(game)))
+  const response = {
+    'nb-games': ongoingGames.size,
+    'ongoing-games': [...ongoingGames.values()].map((game) =>
+      JSON.stringify(game)
+    ),
+  }
+  res.json(response)
 })
