@@ -83,16 +83,15 @@
     />
     <button on:click={onClickCreateGame}>Create game</button>
   </div>
-  <div class="join-game-group">
+  <div class="label-input-button-group">
     <label for="new-game-name">Join a game</label>
     <select disabled={!hasJoined}>
       {#each pendingGames as game, index}
         <option value={index}>{game}</option>
       {/each}
     </select>
-    <button on:click={onClickJoinGame}>Create game</button>
+    <button on:click={onClickJoinGame}>Join this game</button>
   </div>
-  {newGameName}
 </main>
 
 <style>
@@ -105,18 +104,12 @@
   .label-input-button-group > label:nth-of-type(1) {
     grid-column: 1 / span 2;
   }
-  .label-input-button-group > input:nth-of-type(1) {
+  .label-input-button-group > input:nth-of-type(1),
+  .label-input-button-group > select:nth-of-type(1) {
     margin: 0;
   }
   .label-input-button-group > button:nth-of-type(1) {
     margin: 0;
     width: fit-content;
-  }
-  .join-game-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    width: 10em;
-    margin: 0 0 0.5em 0;
   }
 </style>
