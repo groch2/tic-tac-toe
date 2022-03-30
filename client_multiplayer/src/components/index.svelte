@@ -16,3 +16,10 @@
   {/each}
 </div>
 <svelte:component this={selectedComponent} />
+
+<style>
+  :global(h1) {
+    color: white;
+    width: fit-content;
+  }
+</style>

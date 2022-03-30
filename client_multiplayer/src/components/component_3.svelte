@@ -3,7 +3,5 @@
 <style>
   h1 {
     background-color: blue;
-    color: white;
-    width: fit-content;
   }
 </style>
