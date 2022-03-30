@@ -3,14 +3,16 @@ import queryString from 'query-string'
 import WebSocket from 'ws'
 import { GameEngine as Game } from '../../game-engine'
 import { Player } from '../../game-engine/game-engine'
+import { JoinGameRequest } from '../../server/join-game-request'
 import { NextPlayerGameEvent } from '../next-player-game-event'
 
+let connectionsByPlayerName: Map<string, WebSocket.WebSocket>
 let connectionsByGameName: Map<string, WebSocket.WebSocket[]>
-
 export default (
   expressServer: http.Server,
   gamesByGameName: Map<string, Game>
 ) => {
+  connectionsByPlayerName = new Map()
   connectionsByGameName = new Map()
   const websocketServer = new WebSocket.Server({
     noServer: true,
@@ -34,38 +36,14 @@ export default (
       const queryStringParameters = connectionRequest?.url?.split('?')
       if (queryStringParameters) {
         const [_, params] = queryStringParameters
-        const { 'game-name': gameName, 'player-name': playerName } =
-          queryString.parse(params) as {
-            'game-name': string
-            'player-name': string
-          }
-        if (!gamesByGameName.has(gameName)) {
-          throw new Error(`the game: "${gameName} does not exists`)
+        const { 'player-name': playerName } = queryString.parse(params) as {
+          'player-name': string
         }
-        const game = gamesByGameName.get(gameName) as Game
-        let newPlayer: Player | undefined
-        if (game.playerO_Name === undefined) {
-          game.playerO_Name = playerName
-          newPlayer = Player.O
-        } else if (game.playerX_Name === undefined) {
-          game.playerX_Name = playerName
-          newPlayer = Player.X
-        } else {
-          throw new Error(
-            `the game: "${gameName} already has 2 registered players`
-          )
+        if (connectionsByPlayerName.has(playerName)) {
+          throw new Error(`the player name: "${playerName} is already taken`)
         }
-        if (!connectionsByGameName.has(gameName)) {
-          connectionsByGameName.set(gameName, new Array<WebSocket.WebSocket>())
-        }
-        const gameConnections = connectionsByGameName.get(
-          gameName
-        ) as WebSocket.WebSocket[]
-        if (gameConnections.length == 2) {
-          throw new Error(`the game: "${gameName}" already has 2 players.`)
-        }
-        gameConnections.push(websocketConnection)
-        websocketConnection.send(`welcome player ${newPlayer}`)
+        connectionsByPlayerName.set(playerName, websocketConnection)
+        websocketConnection.send(`welcome player ${playerName}`)
       }
       websocketConnection.on('close', (code, reason) => {
         nbConnectedClients -= (() => {
@@ -86,6 +64,47 @@ export default (
       })
     }
   )
+  websocketServer.on(
+    'join-game',
+    ({ 'game-name': gameName, 'player-name': playerName }: JoinGameRequest) => {
+      const game = gamesByGameName.get(gameName)
+      if (game === undefined) {
+        throw new Error(`the game: "${gameName}" does not exists`)
+      }
+      const playerConnection = connectionsByPlayerName.get(playerName)
+      if (playerConnection === undefined) {
+        throw new Error(`the player: "${playerName}" is not connected`)
+      }
+      let newPlayer: Player | undefined
+      if (game.playerO_Name === undefined) {
+        game.playerO_Name = playerName
+        newPlayer = Player.O
+      } else if (game.playerX_Name === undefined) {
+        game.playerX_Name = playerName
+        newPlayer = Player.X
+      } else {
+        throw new Error(
+          `the game: "${gameName} already has 2 registered players`
+        )
+      }
+      if (!connectionsByGameName.has(gameName)) {
+        connectionsByGameName.set(gameName, new Array<WebSocket.WebSocket>())
+      }
+      const gameConnections = connectionsByGameName.get(
+        gameName
+      ) as WebSocket.WebSocket[]
+      if (gameConnections.length == 2) {
+        throw new Error(`the game: "${gameName}" already has 2 players.`)
+      }
+      gameConnections.push(playerConnection)
+      playerConnection.send(
+        `welcome in game: "${gameName}", you are player: "${newPlayer}"`
+      )
+    }
+  )
+  websocketServer.on('new-game-created', (newGame: { 'game-name': string }) => {
+    websocketServer.clients.forEach((c) => c.send(JSON.stringify(newGame)))
+  })
   websocketServer.on(
     'next-player-game-event',
     (nextPlayerGameEvent: NextPlayerGameEvent) => {

@@ -24,6 +24,7 @@ app.post('/create-game', (req, res) => {
   const { 'game-name': gameName }: CreateGameRequest = req.body
   ongoingGames.set(gameName, new Game(gameName))
   console.log(ongoingGames.get(gameName))
+  websocketsServer.emit('new-game-created', { 'game-name': gameName })
   res.send(ongoingGames.get(gameName))
 })
 

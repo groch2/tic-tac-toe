@@ -1,9 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import {
-    GameEngine as Game,
-    getRandomWord,
-  } from '../../game-engine/game-engine'
+  import { GameEngine as Game } from '../../game-engine/game-engine'
+  import { getRandomWord } from '../../game-engine/utils'
   const newGame = () => {
     const gameName = getRandomWord(10)
     const playerO_Name = getRandomWord(10)
