@@ -1,4 +1,5 @@
 import bodyParser from 'body-parser'
+import cors from 'cors'
 import express from 'express'
 import { GameEngine as Game, Player } from '../game-engine/game-engine'
 import { NextPlayerGameEvent } from './next-player-game-event'
@@ -7,6 +8,11 @@ import websockets from './websockets'
 
 const app = express()
 app.use(bodyParser.json())
+app.use(
+  cors({
+    origin: 'http://localhost:8080',
+  })
+)
 
 const port = 3000
 const server = app.listen(port, () => {

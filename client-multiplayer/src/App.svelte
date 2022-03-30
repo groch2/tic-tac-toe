@@ -8,7 +8,7 @@
   let webSocket: WebSocket
   let hasJoined = false
 
-  function onClickJoinGame() {
+  function onClickJoinAsNewPlayer() {
     if (webSocket) {
       webSocket.close(null, 'the player has chosen a new name')
     }
@@ -17,10 +17,22 @@
     )
     webSocket.onopen = function (_) {
       hasJoined = true
+      newGameName = getRandomWord(10)
     }
     webSocket.onmessage = function (event) {
-      const { 'game-name': gameName } = JSON.parse(event.data)
-      pendingGames = [...pendingGames, gameName]
+      const { 'event-type': eventType }: { 'event-type': string } = JSON.parse(
+        event.data
+      )
+      switch (eventType) {
+        case 'new-game-created':
+          const { 'game-name': gameName }: { 'game-name': string } = JSON.parse(
+            event.data
+          )
+          pendingGames = [...pendingGames, gameName]
+          break
+        default:
+          throw new Error(`unknown event type: "${eventType}"`)
+      }
     }
   }
 
@@ -41,6 +53,8 @@
       })
   }
 
+  function onClickJoinGame() {}
+
   onDestroy(() => {
     if (!webSocket) return
     switch (webSocket.readyState) {
@@ -57,7 +71,7 @@
   <div class="label-input-button-group">
     <label for="player-name">Player name</label>
     <input id="player-name" type="text" bind:value={playerName} />
-    <button on:click={onClickJoinGame}>Join to play</button>
+    <button on:click={onClickJoinAsNewPlayer}>Join to play</button>
   </div>
   <div class="label-input-button-group">
     <label for="new-game-name">Create a new game</label>
@@ -76,6 +90,7 @@
         <option value={index}>{game}</option>
       {/each}
     </select>
+    <button on:click={onClickJoinGame}>Create game</button>
   </div>
   {newGameName}
 </main>

@@ -103,7 +103,9 @@ export default (
     }
   )
   websocketServer.on('new-game-created', (newGame: { 'game-name': string }) => {
-    websocketServer.clients.forEach((c) => c.send(JSON.stringify(newGame)))
+    websocketServer.clients.forEach((c) =>
+      c.send(JSON.stringify({ 'event-type': 'new-game-created', ...newGame }))
+    )
   })
   websocketServer.on(
     'next-player-game-event',
