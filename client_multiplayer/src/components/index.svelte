@@ -7,11 +7,11 @@
 </script>
 
 <div style="display:flex;gap:10px">
-  {#each Object.keys(new Array(3).fill(0)) as index, _}
+  {#each new Array(3) as _, index}
     <button
       disabled={selectedComponent === components[index]}
       on:click={() => (selectedComponent = components[index])}
-      >Component {parseInt(index) + 1}</button
+      >Component {index + 1}</button
     >
   {/each}
 </div>
