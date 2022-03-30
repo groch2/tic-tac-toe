@@ -36,13 +36,15 @@
     {`player turn: ${game.currentPlayer}`}
   </div>
   <button on:click={reset} style="width:fit-content"> Reset </button>
-  {#if game.isPlayerO_Winning}
-    <div>Player O as won !</div>
-  {:else if game.isPlayerX_Winning}
-    <div>Player X as won !</div>
-  {:else if game.isDraw}
-    <div>Draw game...</div>
-  {/if}
+  <span>
+    {#if game.isPlayerO_Winning}
+      Player O as won !
+    {:else if game.isPlayerX_Winning}
+      Player X as won !
+    {:else if game.isDraw}
+      Draw game...
+    {/if}
+  </span>
 </div>
 
 <style>
