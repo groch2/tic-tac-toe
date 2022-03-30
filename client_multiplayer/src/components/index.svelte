@@ -19,7 +19,9 @@
 
 <style>
   :global(h1) {
+    --horizontal-sides-padding: 5px;
     color: white;
     width: fit-content;
+    padding: 0 var(--horizontal-sides-padding) 0 var(--horizontal-sides-padding);
   }
 </style>
