@@ -18,9 +18,6 @@ export default (
     noServer: true,
     path: '/websockets',
   })
-  console.log(
-    `websocket server is running: ${JSON.stringify(websocketServer.options)}`
-  )
   expressServer.on('upgrade', (request, socket, head) => {
     websocketServer.handleUpgrade(request, socket, head, (websocket) => {
       websocketServer.emit('connection', websocket, request)

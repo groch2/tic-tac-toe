@@ -67,49 +67,52 @@
   })
 </script>
 
-<div>
-  <div class="label-input-button-group">
-    <label for="player-name">Player name</label>
-    <input id="player-name" type="text" bind:value={playerName} />
-    <button on:click={onClickJoinAsNewPlayer}>Join to play</button>
-  </div>
-  <div class="label-input-button-group">
-    <label for="new-game-name">Create a new game</label>
-    <input
-      disabled={!hasJoined}
-      id="new-game-name"
-      type="text"
-      bind:value={newGameName}
-    />
-    <button on:click={onClickCreateGame}>Create game</button>
-  </div>
-  <div class="label-input-button-group">
-    <label for="new-game-name">Join a game</label>
-    <select disabled={!hasJoined}>
-      {#each pendingGames as game, index}
-        <option value={index}>{game}</option>
-      {/each}
-    </select>
-    <button on:click={onClickJoinGame}>Join this game</button>
-  </div>
+<div class="main-container">
+  <label for="player-name" style="grid-column:1 / span 2;grid-row:1 / 1"
+    >Player name</label
+  >
+  <input
+    id="player-name"
+    type="text"
+    bind:value={playerName}
+    style="grid-column: 1 / 1; grid-row: 2 / 2"
+  />
+  <button
+    on:click={onClickJoinAsNewPlayer}
+    style="grid-column: 2 / 2; grid-row: 2 / 2">Login</button
+  >
+  <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 3 / 3"
+    >Create a new game</label
+  >
+  <input
+    disabled={!hasJoined}
+    id="new-game-name"
+    type="text"
+    bind:value={newGameName}
+    style="grid-column: 1 / 1; grid-row: 4 / 4"
+  />
+  <button
+    on:click={onClickCreateGame}
+    style="grid-column: 2 / 2; grid-row: 4 / 4">Create</button
+  >
+  <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 5 / 5"
+    >Join a game</label
+  >
+  <select disabled={!hasJoined} style="grid-column: 1 / 1; grid-row: 6 / 6">
+    {#each pendingGames as game, index}
+      <option value={index}>{game}</option>
+    {/each}
+  </select>
+  <button on:click={onClickJoinGame} style="grid-column: 2 / 2; grid-row: 6 / 6"
+    >Join</button
+  >
 </div>
 
 <style>
-  .label-input-button-group {
-    display: grid;
-    grid-template-columns: 10em 1fr;
+  .main-container {
+    display: inline-grid;
+    grid-template-columns: 10em auto;
+    grid-template-rows: repeat(6, auto);
     gap: 5px;
-    margin: 0 0 0.5em 0;
-  }
-  .label-input-button-group > label:nth-of-type(1) {
-    grid-column: 1 / span 2;
-  }
-  .label-input-button-group > input:nth-of-type(1),
-  .label-input-button-group > select:nth-of-type(1) {
-    margin: 0;
-  }
-  .label-input-button-group > button:nth-of-type(1) {
-    margin: 0;
-    width: fit-content;
   }
 </style>
