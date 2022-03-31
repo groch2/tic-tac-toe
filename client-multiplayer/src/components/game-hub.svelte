@@ -1,16 +1,18 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
   import { getRandomWord } from '../../../game-engine/utils'
+  import { createEventDispatcher } from 'svelte'
 
   let playerName = getRandomWord(10)
   let newGameName = ''
-  let pendingGames: string[] = []
+  let pendingGames: Set<string> = new Set()
   let webSocket: WebSocket
   let hasJoined = false
+  let selectedGame = ''
 
   function onClickJoinAsNewPlayer() {
     if (webSocket) {
-      webSocket.close(null, 'the player has chosen a new name')
+      webSocket.close(1000, 'the player has chosen a new name')
     }
     webSocket = new WebSocket(
       `ws://localhost:3000/websockets?player-name=${playerName}`
@@ -28,7 +30,7 @@
           const { 'game-name': gameName }: { 'game-name': string } = JSON.parse(
             event.data
           )
-          pendingGames = [...pendingGames, gameName]
+          pendingGames = pendingGames.add(gameName)
           break
         default:
           throw new Error(`unknown event type: "${eventType}"`)
@@ -53,7 +55,12 @@
       })
   }
 
-  function onClickJoinGame() {}
+  const dispatch = createEventDispatcher()
+  function onClickJoinGame() {
+    dispatch('join-game', {
+      'game-name': selectedGame,
+    })
+  }
 
   onDestroy(() => {
     if (!webSocket) return
@@ -62,7 +69,7 @@
       case WebSocket.CLOSING:
         return
       default:
-        webSocket.close(null, "the player has closed it's connection")
+        webSocket.close(1000, "the player has closed it's connection")
     }
   })
 </script>
@@ -93,18 +100,26 @@
   />
   <button
     on:click={onClickCreateGame}
-    style="grid-column: 2 / 2; grid-row: 4 / 4">Create</button
+    style="grid-column: 2 / 2; grid-row: 4 / 4"
+    disabled={!hasJoined || pendingGames.has(newGameName)}>Create</button
   >
   <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 5 / 5"
     >Join a game</label
   >
-  <select disabled={!hasJoined} style="grid-column: 1 / 1; grid-row: 6 / 6">
-    {#each pendingGames as game, index}
-      <option value={index}>{game}</option>
+  <select
+    bind:value={selectedGame}
+    disabled={!hasJoined}
+    style="grid-column: 1 / 1; grid-row: 6 / 6"
+  >
+    <option />
+    {#each [...pendingGames] as game}
+      <option value={game}>{game}</option>
     {/each}
   </select>
-  <button on:click={onClickJoinGame} style="grid-column: 2 / 2; grid-row: 6 / 6"
-    >Join</button
+  <button
+    on:click={onClickJoinGame}
+    disabled={!hasJoined || !pendingGames.has(selectedGame)}
+    style="grid-column: 2 / 2; grid-row: 6 / 6">Join</button
   >
 </div>
 

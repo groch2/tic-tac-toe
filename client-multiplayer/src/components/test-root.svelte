@@ -3,6 +3,7 @@
   import Component_2 from './component-2.svelte'
   import Component_3 from './component-3.svelte'
   import Hub from '../App.svelte'
+  
   const components = [Component_1, Component_2, Component_3]
   let selectedComponent = Component_1
 </script>
