@@ -41,7 +41,7 @@ app.post('/play-game', (req, res) => {
     'cell-index': cellIndex,
   }: PlayGameRequest = req.body
   const game = ongoingGames.get(gameName)
-  if (!game) {
+  if (game === undefined) {
     res.status(404).send(`The game named: "${gameName}" cannot be found.`)
     return
   }

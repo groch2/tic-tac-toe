@@ -116,12 +116,10 @@ export default (
         'last-move-cell': cellOccupied,
         'last-move-coordinates': coordinatesOccupied,
       } = nextPlayerGameEvent
-      if (!connectionsByGameName.has(gameName)) {
+      const gameConnections = connectionsByGameName.get(gameName)
+      if (gameConnections === undefined) {
         throw new Error(`The game named: "${gameName}" cannot be found`)
       }
-      const gameConnections = connectionsByGameName.get(
-        gameName
-      ) as WebSocket.WebSocket[]
       gameConnections[nextPlayer === Player.O ? 0 : 1].send(
         JSON.stringify({
           message: `player ${nextPlayer}, it's your turn. last move: ${coordinatesOccupied} (cell: ${cellOccupied})`,
