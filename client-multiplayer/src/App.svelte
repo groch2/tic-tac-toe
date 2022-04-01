@@ -2,13 +2,17 @@
   import GameBoard from './components/game-board.svelte'
   import GameHub from './components/game-hub.svelte'
   const components = [GameHub, GameBoard]
+  let webSocket: WebSocket
   let selectedComponent = components[0]
   function joinGame(event: CustomEvent) {
-    console.log(JSON.stringify(event.detail))
     const gameName = event.detail['game-name']
     if (gameName) {
       selectedComponent = GameBoard
     }
+  }
+  function playerLogin(event: CustomEvent) {
+    const playerName = event.detail['player-name']
+    webSocket = event.detail['web-socket']
   }
 </script>
 
@@ -22,5 +26,9 @@
       >
     {/each}
   </div>
-  <svelte:component this={selectedComponent} on:join-game={joinGame} />
+  <svelte:component
+    this={selectedComponent}
+    on:join-game={joinGame}
+    on:player-login={playerLogin}
+  />
 </main>

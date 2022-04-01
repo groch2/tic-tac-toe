@@ -9,10 +9,11 @@
   let webSocket: WebSocket
   let hasJoined = false
   let selectedGame = ''
+  const eventDispatcher = createEventDispatcher()
 
-  function onClickJoinAsNewPlayer() {
+  function onClickPlayerLogin() {
     if (webSocket) {
-      webSocket.close(1000, 'the player has chosen a new name')
+      webSocket.close(1000, 'the player has logged-in with a new name')
     }
     webSocket = new WebSocket(
       `ws://localhost:3000/websockets?player-name=${playerName}`
@@ -21,6 +22,10 @@
       hasJoined = true
       newGameName = getRandomWord(10)
     }
+    eventDispatcher('player-login', {
+      'player-name': playerName,
+      'web-socket': webSocket,
+    })
     webSocket.onmessage = function (event) {
       const { 'event-type': eventType }: { 'event-type': string } = JSON.parse(
         event.data
@@ -55,9 +60,8 @@
       })
   }
 
-  const dispatch = createEventDispatcher()
   function onClickJoinGame() {
-    dispatch('join-game', {
+    eventDispatcher('join-game', {
       'game-name': selectedGame,
     })
   }
@@ -85,7 +89,7 @@
     style="grid-column: 1 / 1; grid-row: 2 / 2"
   />
   <button
-    on:click={onClickJoinAsNewPlayer}
+    on:click={onClickPlayerLogin}
     style="grid-column: 2 / 2; grid-row: 2 / 2">Login</button
   >
   <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 3 / 3"

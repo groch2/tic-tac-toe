@@ -10,7 +10,6 @@
   }
   let game = newGame()
   const onCellClick = (cell: HTMLElement, index: number) => {
-    console.log(`click on cell: ${index}`)
     if (game.isGameOver || game.isCellOccupied(index)) return
     cell.innerText = game.currentPlayer
     game.play(index)
@@ -24,7 +23,7 @@
   }
 </script>
 
-<div class="root-container">
+<div class="main-container">
   <div class="board">
     {#each new Array(9).fill(0) as _, index}
       <div on:click={(event) => onCellClick(event.currentTarget, index)} />
@@ -46,7 +45,7 @@
 </div>
 
 <style>
-  .root-container {
+  .main-container {
     display: flex;
     flex-direction: column;
     gap: 10px;
