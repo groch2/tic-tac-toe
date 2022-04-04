@@ -66,6 +66,23 @@
     })
   }
 
+  function onClickRefreshGamesList() {
+    fetch('http://localhost:3000/ongoing-games', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 'game-name': newGameName }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Success:', data)
+      })
+      .catch((error) => {
+        console.error('Error:', error)
+      })
+  }
+
   onDestroy(() => {
     if (!webSocket) return
     switch (webSocket.readyState) {
@@ -125,12 +142,16 @@
     disabled={!hasJoined || !pendingGames.has(selectedGame)}
     style="grid-column: 2 / 2; grid-row: 6 / 6">Join</button
   >
+  <button
+    on:click={onClickRefreshGamesList}
+    style="grid-column: 3 / 3; grid-row: 6 / 6">Refresh</button
+  >
 </div>
 
 <style>
   .main-container {
     display: inline-grid;
-    grid-template-columns: 10em auto;
+    grid-template-columns: 10em auto auto;
     grid-template-rows: repeat(6, auto);
     gap: 5px;
   }

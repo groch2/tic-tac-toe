@@ -49,6 +49,14 @@ export class GameEngine {
   public get currentPlayer() {
     return this._currentPlayer
   }
+  public get currentPlayerName(): string {
+    return (
+      this.currentPlayer === Player.O ? this.playerO_Name : this.playerX_Name
+    ) as string
+  }
+  public get isComplete(): boolean {
+    return this.playerO_Name !== undefined && this.playerX_Name !== undefined
+  }
   public play(cellIndex: number) {
     if (this.isGameOver) {
       throw new Error(ErrorMessages.GAME_OVER)
