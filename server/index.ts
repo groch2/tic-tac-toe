@@ -2,7 +2,9 @@ import bodyParser from 'body-parser'
 import cors from 'cors'
 import express from 'express'
 import { GameEngine as Game, Player } from '../game-engine/game-engine'
-import { NextPlayerGameEvent } from './next-player-game-event'
+import { CreateGameRequest } from './create-game-request'
+import { GameBeginningEvent } from './game-beginning-event'
+import { PlayGameEvent } from './play-game-event'
 import { PlayGameRequest } from './play-game-request'
 
 const app = express()
@@ -22,13 +24,16 @@ const ongoingGamesByGameName: Map<string, Game> = new Map()
 const connectionsByPlayerName: Map<string, express.Response> = new Map()
 const pendingGamesNames: Set<string> = new Set()
 
-interface CreateGameRequest {
-  'game-name': string
-  'player-name': string
-  'player-position': Player
+function sendEvent(
+  playerConnection: express.Response,
+  event: string,
+  data: any
+) {
+  playerConnection.write(`event: ${event}, data: ${JSON.stringify(data)}\n\n`)
 }
 
-function createGame(request: express.Request, response: express.Response) {
+app.get('/create-game', (request, response) => {
+  console.debug('create game request begins')
   const headers = {
     'Content-Type': 'text/event-stream',
     Connection: 'keep-alive',
@@ -40,7 +45,8 @@ function createGame(request: express.Request, response: express.Response) {
     'game-name': gameName,
     'player-name': playerName,
     'player-position': playerPosition,
-  } = request.body as CreateGameRequest
+  } = request.query as CreateGameRequest
+  console.debug(`create game request`, request.query)
   const newGame = new Game(
     gameName,
     playerPosition === Player.O ? playerName : undefined,
@@ -60,10 +66,9 @@ function createGame(request: express.Request, response: express.Response) {
     console.log(`${playerName} Connection closed`)
     connectionsByPlayerName.delete(playerName)
   })
-}
-app.post('/create-game', createGame)
+})
 
-function joinGame(request: express.Request, response: express.Response) {
+app.post('/join-game', (request, response) => {
   const {
     'game-name': gameName,
     'player-name': playerName,
@@ -87,6 +92,17 @@ function joinGame(request: express.Request, response: express.Response) {
   }
   if (game.isComplete) {
     pendingGamesNames.delete(game.gameName)
+    const otherPlayerName = (
+      playerPosition === Player.O ? game.playerX_Name : game.playerO_Name
+    ) as string
+    const otherPlayerConnection = connectionsByPlayerName.get(otherPlayerName)
+    if (otherPlayerConnection === undefined) {
+      throw new Error('the other player connection has been lost')
+    }
+    sendEvent(otherPlayerConnection, 'game-beginning', {
+      'game-name': game.gameName,
+      'opponent-player-name': playerName,
+    } as GameBeginningEvent)
   }
 
   const headers = {
@@ -107,40 +123,39 @@ function joinGame(request: express.Request, response: express.Response) {
     console.log(`${playerName} Connection closed`)
     connectionsByPlayerName.delete(playerName)
   })
-}
-app.post('/create-game', joinGame)
+})
 
-app.post('/play-game', (req, res) => {
+app.post('/play-game', (request, response) => {
   const {
     'game-name': gameName,
     'player-name': playerName,
     'cell-index': cellIndex,
-  }: PlayGameRequest = req.body
+  }: PlayGameRequest = request.body
   const game = ongoingGamesByGameName.get(gameName)
   if (game === undefined) {
-    res.status(404).send(`The game named: "${gameName}" cannot be found.`)
+    response.status(404).send(`The game named: "${gameName}" cannot be found.`)
     return
   }
   if (game.isGameOver) {
-    res.status(400).send(`The game: "${gameName}" is over`)
+    response.status(400).send(`The game: "${gameName}" is over`)
     return
   }
   if (
     (game.currentPlayer === Player.O && game.playerO_Name !== playerName) ||
     (game.currentPlayer === Player.X && game.playerX_Name !== playerName)
   ) {
-    res.status(400).send(`Wrong player: "${playerName}"`)
+    response.status(400).send(`Wrong player: "${playerName}"`)
     return
   }
   if (game.isCellOccupied(cellIndex)) {
-    res.status(400).send(`Position already occupied: "${cellIndex}"`)
+    response.status(400).send(`Position already occupied: "${cellIndex}"`)
     return
   }
   game.play(cellIndex)
   if (!game.isGameOver) {
     const row = Math.floor(cellIndex / 3)
     const column = cellIndex - row * 3
-    const nextPlayerGameEvent: NextPlayerGameEvent = {
+    const nextPlayerGameEvent: PlayGameEvent = {
       'game-name': gameName,
       'next-player': game.currentPlayer,
       'last-move-cell': cellIndex,
@@ -154,25 +169,22 @@ app.post('/play-game', (req, res) => {
         `the connection for player: "${game.currentPlayerName}" is lost`
       )
     }
-    nextPlayerConnection.write(
-      `data: ${JSON.stringify(nextPlayerGameEvent)}\n\n`
-    )
+    sendEvent(nextPlayerConnection, 'play-game', nextPlayerGameEvent)
   }
-  res.sendStatus(200)
+  response.sendStatus(200)
 })
 
-app.get('/ongoing-games', (_, res) => {
-  const response = {
+app.get('/ongoing-games', (_, response) => {
+  response.json({
     'nb-games': ongoingGamesByGameName.size,
     'ongoing-games': [...ongoingGamesByGameName.values()].map((game) =>
       JSON.stringify(game)
     ),
-  }
-  res.json(response)
+  })
 })
 
-app.get('/pending-games', (_, res) => {
-  res.json({
+app.get('/pending-games', (_, response) => {
+  response.json({
     'nb-games': pendingGamesNames.size,
     'pending-games': [...pendingGamesNames].sort((a, b) =>
       a.localeCompare(b, undefined, { sensitivity: 'base' })

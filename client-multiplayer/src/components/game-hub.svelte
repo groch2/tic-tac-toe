@@ -1,98 +1,74 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
-  import { getRandomWord } from '../../../game-engine/utils'
   import { createEventDispatcher } from 'svelte'
+  import { getRandomWord } from '../../../game-engine/utils'
+  import { onDestroy } from 'svelte'
+  import type { GameBeginningEvent } from '../../../server/game-beginning-event'
+  import type { PlayGameEvent } from '../../../server/play-game-event'
 
   let playerName = getRandomWord(10)
   let newGameName = ''
+  let eventSource: EventSource
   let pendingGames: Set<string> = new Set()
-  let webSocket: WebSocket
   let hasJoined = false
   let selectedGame = ''
   const eventDispatcher = createEventDispatcher()
 
   function onClickPlayerLogin() {
-    if (webSocket) {
-      webSocket.close(1000, 'the player has logged-in with a new name')
-    }
-    webSocket = new WebSocket(
-      `ws://localhost:3000/websockets?player-name=${playerName}`
-    )
-    webSocket.onopen = function (_) {
-      hasJoined = true
-      newGameName = getRandomWord(10)
-    }
     eventDispatcher('player-login', {
       'player-name': playerName,
-      'web-socket': webSocket,
     })
-    webSocket.onmessage = function (event) {
-      const { 'event-type': eventType }: { 'event-type': string } = JSON.parse(
-        event.data
-      )
-      switch (eventType) {
-        case 'new-game-created':
-          const { 'game-name': gameName }: { 'game-name': string } = JSON.parse(
-            event.data
-          )
-          pendingGames = pendingGames.add(gameName)
-          break
-        default:
-          throw new Error(`unknown event type: "${eventType}"`)
-      }
-    }
+    hasJoined = true
+    newGameName = getRandomWord(10)
   }
 
   function onClickCreateGame() {
-    fetch('http://localhost:3000/create-game', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 'game-name': newGameName }),
+    if (
+      eventSource !== undefined &&
+      eventSource.readyState !== EventSource.CLOSED
+    ) {
+      eventSource.close()
+    }
+    console.debug(`creating new game: "${newGameName}"`)
+    eventSource = new EventSource(
+      `http://localhost:3000/create-game?game-name=${newGameName}&player-name=${playerName}&player-position=O`
+    )
+    eventSource.onopen = () => {
+      console.log('event source opened')
+      eventDispatcher('game-created', { 'game-name': newGameName })
+    }
+    eventSource.onerror = () => {
+      console.log(`event source error`)
+    }
+    eventSource.addEventListener('game-beginning', (event) => {
+      const gameBeginningEvent = JSON.parse(event.data) as GameBeginningEvent
+      console.log({ gameBeginningEvent })
+    })
+    eventSource.addEventListener('play-game', (event) => {
+      const playGame = JSON.parse(event.data) as PlayGameEvent
+      console.log({ playGame })
+    })
+  }
+
+  function onClickRefreshGamesList() {
+    fetch('http://localhost:3000/pending-games', {
+      method: 'GET',
     })
       .then((response) => response.json())
-      .then((data) => {
-        console.log('Success:', data)
-      })
+      .then(
+        ({ 'pending-games': pendingGames }: { 'pending-games': string[] }) => {
+          pendingGames.push(...pendingGames)
+        }
+      )
       .catch((error) => {
         console.error('Error:', error)
       })
   }
 
   function onClickJoinGame() {
-    eventDispatcher('join-game', {
-      'game-name': selectedGame,
-    })
+    eventDispatcher('join-game', { 'game-name': selectedGame })
   }
 
-  function onClickRefreshGamesList() {
-    fetch('http://localhost:3000/ongoing-games', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 'game-name': newGameName }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Success:', data)
-      })
-      .catch((error) => {
-        console.error('Error:', error)
-      })
-  }
-
-  onDestroy(() => {
-    if (!webSocket) return
-    switch (webSocket.readyState) {
-      case WebSocket.CLOSED:
-      case WebSocket.CLOSING:
-        return
-      default:
-        webSocket.close(1000, "the player has closed it's connection")
-    }
-  })
+  onDestroy(() => null)
 </script>
 
 <div class="main-container">
