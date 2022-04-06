@@ -1,4 +1,4 @@
-import { Player } from '../game-engine/game-engine'
+import type { Player } from '../game-engine/game-engine'
 
 export interface PlayGameEvent {
   'game-name': string

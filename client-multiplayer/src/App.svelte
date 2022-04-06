@@ -1,12 +1,15 @@
 <script lang="ts">
   import GameBoard from './components/game-board.svelte'
   import GameHub from './components/game-hub.svelte'
+
   const components = [GameHub, GameBoard]
   let selectedComponent: typeof GameHub | typeof GameBoard = components[0]
+
   function playerLogin(event: CustomEvent) {
     const playerName = event.detail['player-name'] as string
     console.log(`player logged-in: "${playerName}"`)
   }
+
   function gameCreated(event: CustomEvent) {
     const gameName = event.detail['game-name'] as string
     console.log(`new game created: "${gameName}"`)
@@ -14,6 +17,7 @@
       selectedComponent = GameBoard
     }
   }
+
   function joinGame(event: CustomEvent) {
     const gameName = event.detail['game-name'] as string
     console.log(`player has joined a game: "${gameName}"`)

@@ -4,11 +4,13 @@
   import { onDestroy } from 'svelte'
   import type { GameBeginningEvent } from '../../../server/game-beginning-event'
   import type { PlayGameEvent } from '../../../server/play-game-event'
+  import { getGameBeginningEvent } from '../custom-events/game-beginning'
+  import { getPlayGameEvent } from '../custom-events/play-game'
 
   let playerName = getRandomWord(10)
   let newGameName = ''
   let eventSource: EventSource
-  let pendingGames: Set<string> = new Set()
+  let _pendingGames: Set<string> = new Set()
   let hasJoined = false
   let selectedGame = ''
   const eventDispatcher = createEventDispatcher()
@@ -22,12 +24,7 @@
   }
 
   function onClickCreateGame() {
-    if (
-      eventSource !== undefined &&
-      eventSource.readyState !== EventSource.CLOSED
-    ) {
-      eventSource.close()
-    }
+    closeEventSource()
     console.debug(`creating new game: "${newGameName}"`)
     eventSource = new EventSource(
       `http://localhost:3000/create-game?game-name=${newGameName}&player-name=${playerName}&player-position=O`
@@ -40,12 +37,19 @@
       console.log(`event source error`)
     }
     eventSource.addEventListener('game-beginning', (event) => {
-      const gameBeginningEvent = JSON.parse(event.data) as GameBeginningEvent
-      console.log({ gameBeginningEvent })
+      const gameBeginningServerEvent = JSON.parse(
+        event.data
+      ) as GameBeginningEvent
+      const gameBeginningEvent = getGameBeginningEvent(gameBeginningServerEvent)
+      const gameBeginningEventDispatched =
+        document.dispatchEvent(gameBeginningEvent)
+      console.log({ gameBeginningEventDispatched })
     })
     eventSource.addEventListener('play-game', (event) => {
-      const playGame = JSON.parse(event.data) as PlayGameEvent
-      console.log({ playGame })
+      const playGameServerEvent = JSON.parse(event.data) as PlayGameEvent
+      const playGameEvent = getPlayGameEvent(playGameServerEvent)
+      const playGameEventDispatched = document.dispatchEvent(playGameEvent)
+      console.log({ playGameEventDispatched })
     })
   }
 
@@ -56,7 +60,7 @@
       .then((response) => response.json())
       .then(
         ({ 'pending-games': pendingGames }: { 'pending-games': string[] }) => {
-          pendingGames.push(...pendingGames)
+          _pendingGames = new Set(pendingGames)
         }
       )
       .catch((error) => {
@@ -68,7 +72,16 @@
     eventDispatcher('join-game', { 'game-name': selectedGame })
   }
 
-  onDestroy(() => null)
+  onDestroy(() => closeEventSource())
+
+  function closeEventSource() {
+    if (
+      eventSource !== undefined &&
+      eventSource.readyState !== EventSource.CLOSED
+    ) {
+      eventSource.close()
+    }
+  }
 </script>
 
 <div class="main-container">
@@ -98,7 +111,7 @@
   <button
     on:click={onClickCreateGame}
     style="grid-column: 2 / 2; grid-row: 4 / 4"
-    disabled={!hasJoined || pendingGames.has(newGameName)}>Create</button
+    disabled={!hasJoined || _pendingGames.has(newGameName)}>Create</button
   >
   <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 5 / 5"
     >Join a game</label
@@ -109,17 +122,18 @@
     style="grid-column: 1 / 1; grid-row: 6 / 6"
   >
     <option />
-    {#each [...pendingGames] as game}
+    {#each [..._pendingGames] as game}
       <option value={game}>{game}</option>
     {/each}
   </select>
   <button
     on:click={onClickJoinGame}
-    disabled={!hasJoined || !pendingGames.has(selectedGame)}
+    disabled={!hasJoined}
     style="grid-column: 2 / 2; grid-row: 6 / 6">Join</button
   >
   <button
     on:click={onClickRefreshGamesList}
+    disabled={!hasJoined}
     style="grid-column: 3 / 3; grid-row: 6 / 6">Refresh</button
   >
 </div>
