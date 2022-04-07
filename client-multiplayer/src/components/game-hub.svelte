@@ -1,55 +1,37 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte'
   import { getRandomWord } from '../../../game-engine/utils'
-  import { onDestroy } from 'svelte'
-  import type { GameBeginningEvent } from '../../../server/game-beginning-event'
-  import type { PlayGameEvent } from '../../../server/play-game-event'
-  import { getGameBeginningEvent } from '../custom-events/game-beginning'
-  import { getPlayGameEvent } from '../custom-events/play-game'
+  import { Player } from '../../../game-engine/game-engine'
 
   let playerName = getRandomWord(10)
   let newGameName = ''
-  let eventSource: EventSource
   let _pendingGames: Set<string> = new Set()
   let hasJoined = false
   let selectedGame = ''
-  const eventDispatcher = createEventDispatcher()
+  const dispatchEvent = createEventDispatcher()
 
   function onClickPlayerLogin() {
-    eventDispatcher('player-login', {
+    dispatchEvent('player-login', {
       'player-name': playerName,
     })
     hasJoined = true
     newGameName = getRandomWord(10)
+    onClickRefreshGamesList()
   }
 
   function onClickCreateGame() {
-    closeEventSource()
-    console.debug(`creating new game: "${newGameName}"`)
-    eventSource = new EventSource(
-      `http://localhost:3000/create-game?game-name=${newGameName}&player-name=${playerName}&player-position=O`
-    )
-    eventSource.onopen = () => {
-      console.log('event source opened')
-      eventDispatcher('game-created', { 'game-name': newGameName })
-    }
-    eventSource.onerror = () => {
-      console.log(`event source error`)
-    }
-    eventSource.addEventListener('game-beginning', (event) => {
-      const gameBeginningServerEvent = JSON.parse(
-        event.data
-      ) as GameBeginningEvent
-      const gameBeginningEvent = getGameBeginningEvent(gameBeginningServerEvent)
-      const gameBeginningEventDispatched =
-        document.dispatchEvent(gameBeginningEvent)
-      console.log({ gameBeginningEventDispatched })
+    dispatchEvent('create-game', {
+      'game-name': newGameName,
+      'player-name': playerName,
+      'player-position': Player.O,
     })
-    eventSource.addEventListener('play-game', (event) => {
-      const playGameServerEvent = JSON.parse(event.data) as PlayGameEvent
-      const playGameEvent = getPlayGameEvent(playGameServerEvent)
-      const playGameEventDispatched = document.dispatchEvent(playGameEvent)
-      console.log({ playGameEventDispatched })
+  }
+
+  function onClickJoinGame() {
+    dispatchEvent('join-game', {
+      'game-name': selectedGame,
+      'player-name': playerName,
+      'player-position': Player.X,
     })
   }
 
@@ -57,7 +39,10 @@
     fetch('http://localhost:3000/pending-games', {
       method: 'GET',
     })
-      .then((response) => response.json())
+      .then((response) => {
+        console.log({ 'get-pending-games-reponse-status': response.status })
+        return response.json()
+      })
       .then(
         ({ 'pending-games': pendingGames }: { 'pending-games': string[] }) => {
           _pendingGames = new Set(pendingGames)
@@ -66,21 +51,6 @@
       .catch((error) => {
         console.error('Error:', error)
       })
-  }
-
-  function onClickJoinGame() {
-    eventDispatcher('join-game', { 'game-name': selectedGame })
-  }
-
-  onDestroy(() => closeEventSource())
-
-  function closeEventSource() {
-    if (
-      eventSource !== undefined &&
-      eventSource.readyState !== EventSource.CLOSED
-    ) {
-      eventSource.close()
-    }
   }
 </script>
 
