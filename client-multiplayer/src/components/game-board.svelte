@@ -91,6 +91,7 @@
 </script>
 
 <div class="main-container">
+  <h1 id="game-name">{game.gameName}</h1>
   <div class="board" class:disabled-board={!isGameActive}>
     {#each new Array(9).fill(0) as _, index}
       <div on:click={(event) => onCellClick(event.currentTarget, index)} />
@@ -113,9 +114,15 @@
 
 <style>
   .main-container {
-    display: flex;
+    display: inline-flex;
     flex-direction: column;
     gap: 10px;
+  }
+  h1[id='game-name'] {
+    text-align: center;
+    font-size: larger;
+    margin-block-start: 0;
+    margin-block-end: 0;
   }
   .board {
     --cell-size: 3em;
@@ -127,6 +134,7 @@
     border: 1px solid;
     width: fit-content;
     text-align: center;
+    justify-self: center;
   }
   .disabled-board {
     color: #ccc;
