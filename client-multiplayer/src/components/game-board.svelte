@@ -1,17 +1,31 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, createEventDispatcher } from 'svelte'
   import { GameEngine as Game } from '../../../game-engine/game-engine'
   import { getRandomWord } from '../../../game-engine/utils'
   import type { GameBeginningEvent } from '../../../server/game-beginning-event'
   import type { PlayGameRequest } from '../../../server/play-game-request'
   import type { PlayGameEvent } from '../../../server/play-game-event'
+  import type { EndOfGamePlayerNotification } from '../../../server/end-of-game-player-notification'
+  import type { QuitGameRequest } from '../../../server/quit-game-request'
   import { BoardComponentOrigin } from '../custom-types'
+  import { PlayerEndOfGameStatus } from '../../../server/player-end-of-game-status'
 
   export let gameName: string
   export let playerName: string
   export let isGameActive = false
   export let boardComponentOrigin: BoardComponentOrigin
-  export function bindToEventSource(eventSource: EventSource) {
+
+  export function bindToGameBeginningEvent(eventSource: EventSource) {
+    eventSource.addEventListener('game-beginning', (event) => {
+      const { 'opponent-player-name': opponentPlayerName } = JSON.parse(
+        event.data
+      ) as GameBeginningEvent
+      console.log(`playing against: "${opponentPlayerName}"`)
+      isGameActive = true
+    })
+  }
+
+  export function bindToPlayGameEvent(eventSource: EventSource) {
     eventSource.addEventListener('play-game', (event) => {
       console.debug(`play game event`)
       const { 'cell-index-played': cellIndex } = JSON.parse(
@@ -23,12 +37,24 @@
       game = game
       isGameActive = true
     })
-    eventSource.addEventListener('game-beginning', (event) => {
-      const { 'opponent-player-name': opponentPlayerName } = JSON.parse(
-        event.data
-      ) as GameBeginningEvent
-      console.log(`playing against: "${opponentPlayerName}"`)
-      isGameActive = true
+  }
+
+  export function bindToEndOfGameEvent(eventSource: EventSource) {
+    console.log('binding to end of game event')
+    eventSource.addEventListener('end-of-game', (event) => {
+      console.log('end of game event received')
+      const {
+        'player-end of-game-status': playerEndOfGameStatus,
+        'is-end-of-game-by-forfeit': isEndOfGameByForfeit,
+      } = JSON.parse(event.data) as EndOfGamePlayerNotification
+      console.log(
+        `You ${
+          playerEndOfGameStatus === PlayerEndOfGameStatus.WINNER
+            ? 'won'
+            : 'lost'
+        } by ${isEndOfGameByForfeit ? 'forfeit' : 'defeat'}`
+      )
+      isGameActive = false
     })
   }
 
@@ -48,13 +74,12 @@
       cache: 'no-cache',
       headers: {
         'Content-Type': 'application/json',
-        // 'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: JSON.stringify({
         'game-name': gameName,
         'player-name': playerName,
         'cell-index': index,
-      } as PlayGameRequest), // body data type must match "Content-Type" header
+      } as PlayGameRequest),
     })
       .then((response) => {
         if (response.ok) {
@@ -80,8 +105,34 @@
     isGameActive = true
   }
 
-  const quitGameEvent = new Event('quit-game')
-  const quit = () => document.dispatchEvent(quitGameEvent)
+  const dispatchEvent = createEventDispatcher()
+  function quit() {
+    fetch('http://localhost:3000/quit-game', {
+      method: 'POST',
+      cache: 'no-cache',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        'game-name': gameName,
+        'quitter-player-name': playerName,
+      } as QuitGameRequest),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          console.log('Network error on play request', {
+            'response-status': response.status,
+            'status-text': response.statusText,
+          })
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error)
+      })
+      .finally(() => {
+        dispatchEvent('quit-game')
+      })
+  }
 
   let cells: HTMLCollection
   onMount(() => {
@@ -91,7 +142,7 @@
 </script>
 
 <div class="main-container">
-  <h1 id="game-name">{game.gameName}</h1>
+  <h1 id="game-name">{gameName}</h1>
   <div class="board" class:disabled-board={!isGameActive}>
     {#each new Array(9).fill(0) as _, index}
       <div on:click={(event) => onCellClick(event.currentTarget, index)} />

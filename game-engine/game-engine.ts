@@ -78,6 +78,14 @@ export class GameEngine {
   public isCellOccupied(cellIndex: number) {
     return this._board[cellIndex] !== null
   }
+  public getPlayerNameByPosition(playerPosition: Player) {
+    return (
+      playerPosition === Player.O ? this.playerO_Name : this.playerX_Name
+    ) as string
+  }
+  public getPlayerPositionByName(playerName: string) {
+    return playerName === this.playerO_Name ? Player.O : Player.X
+  }
   toJSON() {
     return Object.fromEntries(
       [

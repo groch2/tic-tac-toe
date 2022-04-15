@@ -7,6 +7,9 @@ import { JoinGameRequest } from './join-game-request'
 import { PlayGameRequest } from './play-game-request'
 import { GameBeginningEvent } from './game-beginning-event'
 import { PlayGameEvent } from './play-game-event'
+import { PlayerEndOfGameStatus } from './player-end-of-game-status'
+import { EndOfGamePlayerNotification } from './end-of-game-player-notification'
+import { QuitGameRequest } from './quit-game-request'
 
 const app = express()
 app.use(bodyParser.json())
@@ -22,6 +25,7 @@ app.listen(port, () => {
 })
 
 const ongoingGamesByGameName: Map<string, Game> = new Map()
+const nbActivePlayersByGameName: Map<string, number> = new Map()
 const connectionsByPlayerName: Map<string, express.Response> = new Map()
 const pendingGamesNames: Set<string> = new Set()
 
@@ -54,6 +58,7 @@ app.get('/create-game', (request, response) => {
     playerPosition === Player.X ? playerName : undefined
   )
   ongoingGamesByGameName.set(gameName, newGame)
+  nbActivePlayersByGameName.set(gameName, 1)
   pendingGamesNames.add(gameName)
 
   const data = `data: ${JSON.stringify({
@@ -92,6 +97,10 @@ app.get('/join-game', (request, response) => {
     }
     game.playerX_Name = playerName
   }
+  nbActivePlayersByGameName.set(
+    gameName,
+    (nbActivePlayersByGameName.get(gameName) as number) + 1
+  )
   if (game.isComplete) {
     console.debug(`the game is complete, it can begins`)
     pendingGamesNames.delete(game.gameName)
@@ -163,20 +172,47 @@ app.post('/play-game', (request, response) => {
   }
   const previousPlayer = game.currentPlayer
   game.play(cellIndex)
-  if (!game.isGameOver) {
-    const nextPlayerGameEvent: PlayGameEvent = {
-      'previous-player': previousPlayer,
-      'cell-index-played': cellIndex,
-    }
-    const nextPlayerConnection = connectionsByPlayerName.get(
-      game.currentPlayerName
+  const nextPlayerGameEvent: PlayGameEvent = {
+    'previous-player': previousPlayer,
+    'cell-index-played': cellIndex,
+  }
+  const nextPlayerConnection = connectionsByPlayerName.get(
+    game.currentPlayerName
+  )
+  if (nextPlayerConnection === undefined) {
+    throw new Error(
+      `the connection for player: "${game.currentPlayerName}" is lost`
     )
-    if (nextPlayerConnection === undefined) {
-      throw new Error(
-        `the connection for player: "${game.currentPlayerName}" is lost`
-      )
-    }
-    sendEvent(nextPlayerConnection, 'play-game', nextPlayerGameEvent)
+  }
+  sendEvent(nextPlayerConnection, 'play-game', nextPlayerGameEvent)
+  response.sendStatus(200)
+  console.debug('played:', { nextPlayerGameEvent })
+})
+
+app.post('/quit-game', (request, response) => {
+  const { 'game-name': gameName, 'quitter-player-name': quitterPlayerName } =
+    request.body as QuitGameRequest
+  console.debug({ 'quit-game-request': request.body })
+  const game = ongoingGamesByGameName.get(gameName) as Game
+  const quitterPlayerPosition = game.getPlayerPositionByName(quitterPlayerName)
+  const winnerPlayerName =
+    quitterPlayerPosition === Player.O ? game.playerX_Name : game.playerO_Name
+  if (winnerPlayerName !== undefined) {
+    const winnerConnection = connectionsByPlayerName.get(
+      winnerPlayerName
+    ) as express.Response
+    sendEvent(winnerConnection, 'end-of-game', {
+      'player-end of-game-status': PlayerEndOfGameStatus.WINNER,
+      'is-end-of-game-by-forfeit': true,
+    } as EndOfGamePlayerNotification)
+  }
+  let nbActivePlayers = nbActivePlayersByGameName.get(gameName) as number
+  nbActivePlayersByGameName.set(gameName, nbActivePlayers - 1)
+  nbActivePlayers = nbActivePlayersByGameName.get(gameName) as number
+  console.log({ nbActivePlayers })
+  if (nbActivePlayers === 0) {
+    ongoingGamesByGameName.delete(gameName)
+    pendingGamesNames.delete(gameName)
   }
   response.sendStatus(200)
 })

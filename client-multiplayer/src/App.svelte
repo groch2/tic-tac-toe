@@ -14,8 +14,8 @@
   let boardComponentOrigin: BoardComponentOrigin = null
   let eventSource: EventSource
   let gameBoard: GameBoard
-  let _playerName: string = null
   let _gameName: string = null
+  let _playerName: string = null
 
   function playerLogin(event: CustomEvent) {
     const playerName = event.detail['player-name'] as string
@@ -42,7 +42,9 @@
     eventSource.onerror = () => {
       console.log(`event source error`)
     }
-    gameBoard.bindToEventSource(eventSource)
+    gameBoard.bindToGameBeginningEvent(eventSource)
+    gameBoard.bindToPlayGameEvent(eventSource)
+    gameBoard.bindToEndOfGameEvent(eventSource)
     _gameName = newGameName
     _playerName = playerName
   }
@@ -67,7 +69,8 @@
     eventSource.onerror = () => {
       console.log(`event source error`)
     }
-    gameBoard.bindToEventSource(eventSource)
+    gameBoard.bindToPlayGameEvent(eventSource)
+    gameBoard.bindToEndOfGameEvent(eventSource)
     _gameName = gameName
     _playerName = playerName
   }
@@ -110,6 +113,7 @@
       bind:boardComponentOrigin
       bind:playerName={_playerName}
       bind:gameName={_gameName}
+      on:quit-game={quitGameEventHandler}
     />
   </div>
 </main>
