@@ -98,7 +98,7 @@
   </select>
   <button
     on:click={onClickJoinGame}
-    disabled={!hasJoined}
+    disabled={!hasJoined || !selectedGame}
     style="grid-column: 2 / 2; grid-row: 6 / 6">Join</button
   >
   <button
