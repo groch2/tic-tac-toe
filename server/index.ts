@@ -26,6 +26,7 @@ app.listen(port, () => {
 
 // Games names that have been created, and are waiting for an opponent, in order to start
 const pendingGamesNames: Set<string> = new Set()
+// Games that have at lease one registered player
 const gamesByGameName: Map<string, Game> = new Map()
 const nbActivePlayersByGameName: Map<string, number> = new Map()
 const connectionsByPlayerName: Map<string, express.Response> = new Map()
@@ -45,7 +46,6 @@ app.get('/create-game', (request, response) => {
     Connection: 'keep-alive',
     'Cache-Control': 'no-cache',
   }
-  response.writeHead(200, headers)
 
   const {
     'game-name': gameName,
@@ -62,11 +62,7 @@ app.get('/create-game', (request, response) => {
   gamesByGameName.set(gameName, newGame)
   nbActivePlayersByGameName.set(gameName, 1)
 
-  const data = `data: ${JSON.stringify({
-    'game-name': gameName,
-    'player-position': playerPosition,
-  })}\n\n`
-  response.write(data)
+  response.writeHead(200, headers)
 
   connectionsByPlayerName.set(playerName, response)
   request.on('close', () => {
@@ -126,12 +122,6 @@ app.get('/join-game', (request, response) => {
   }
   response.writeHead(200, headers)
 
-  const data = `data: ${JSON.stringify({
-    'game-name': gameName,
-    'player-position': playerPosition,
-  })}\n\n`
-  response.write(data)
-
   connectionsByPlayerName.set(playerName, response)
   request.on('close', () => {
     console.log(`${playerName} Connection closed, join game`)
@@ -146,11 +136,7 @@ app.post('/play-game', (request, response) => {
     'player-name': playerName,
     'cell-index': cellIndex,
   } = request.body as PlayGameRequest
-  console.log('play game request body:', {
-    'game-name': gameName,
-    'player-name': playerName,
-    'cell-index': cellIndex,
-  })
+  console.log('play game request body:', request.body as PlayGameRequest)
   const game = gamesByGameName.get(gameName)
   if (game === undefined) {
     response.status(404).send(`The game named: "${gameName}" cannot be found.`)
