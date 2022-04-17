@@ -19,7 +19,7 @@ export class GameEngine {
     return [...this._board]
   }
   public constructor(
-    public readonly gameName: string,
+    public readonly initiatorPlayerName: string,
     public playerO_Name?: string,
     public playerX_Name?: string
   ) {

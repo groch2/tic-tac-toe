@@ -10,7 +10,7 @@
   import { BoardComponentOrigin } from '../custom-types'
   import { PlayerEndOfGameStatus } from '../../../server/player-end-of-game-status'
 
-  export let gameName: string
+  export let gameInitiatorPlayerName: string
   export let playerName: string
   export let isGameActive = false
   export let boardComponentOrigin: BoardComponentOrigin
@@ -76,7 +76,7 @@
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        'game-name': gameName,
+        'game-name': gameInitiatorPlayerName,
         'player-name': playerName,
         'cell-index': index,
       } as PlayGameRequest),
@@ -114,7 +114,7 @@
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        'game-name': gameName,
+        'game-initiator-player-name': gameInitiatorPlayerName,
         'quitter-player-name': playerName,
       } as QuitGameRequest),
     })
@@ -142,7 +142,7 @@
 </script>
 
 <div class="main-container">
-  <h1 id="game-name">{gameName}</h1>
+  <h1>{gameInitiatorPlayerName}</h1>
   <div class="board" class:disabled-board={!isGameActive}>
     {#each new Array(9).fill(0) as _, index}
       <div on:click={(event) => onCellClick(event.currentTarget, index)} />
@@ -169,7 +169,7 @@
     flex-direction: column;
     gap: 10px;
   }
-  h1[id='game-name'] {
+  h1 {
     text-align: center;
     font-size: larger;
     margin-block-start: 0;

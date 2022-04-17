@@ -1,4 +1,4 @@
 export type QuitGameRequest = {
-  'game-name': string
+  'game-initiator-player-name': string
   'quitter-player-name': string
 }

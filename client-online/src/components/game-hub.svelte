@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte'
   import { getRandomWord } from '../../../game-engine/utils'
   import { Player } from '../../../game-engine/game-engine'
+  import type { CreateGameEvent } from '../custom-events/create-game'
 
   let playerName = getRandomWord(10)
   let newGameName = ''
@@ -21,10 +22,9 @@
 
   function onClickCreateGame() {
     dispatchEvent('create-game', {
-      'game-name': newGameName,
-      'player-name': playerName,
-      'player-position': Player.O,
-    })
+      'initiator-player-name': playerName,
+      'initiator-player-position': Player.O,
+    } as CreateGameEvent)
   }
 
   function onClickJoinGame() {
@@ -68,28 +68,19 @@
     on:click={onClickPlayerLogin}
     style="grid-column: 2 / 2; grid-row: 2 / 2">Login</button
   >
-  <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 3 / 3"
-    >Create a new game</label
-  >
-  <input
-    disabled={!hasJoined}
-    id="new-game-name"
-    type="text"
-    bind:value={newGameName}
-    style="grid-column: 1 / 1; grid-row: 4 / 4"
-  />
   <button
     on:click={onClickCreateGame}
-    style="grid-column: 2 / 2; grid-row: 4 / 4"
-    disabled={!hasJoined || _pendingGames.has(newGameName)}>Create</button
+    style="grid-column: 2 / 2; grid-row: 3 / 3"
+    disabled={!hasJoined || _pendingGames.has(newGameName)}
+    >Create a new game</button
   >
-  <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 5 / 5"
+  <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 4 / 4"
     >Join a game</label
   >
   <select
     bind:value={selectedGame}
     disabled={!hasJoined}
-    style="grid-column: 1 / 1; grid-row: 6 / 6"
+    style="grid-column: 1 / 1; grid-row: 5 / 5"
   >
     <option />
     {#each [..._pendingGames] as game}
@@ -99,12 +90,12 @@
   <button
     on:click={onClickJoinGame}
     disabled={!hasJoined || !selectedGame}
-    style="grid-column: 2 / 2; grid-row: 6 / 6">Join</button
+    style="grid-column: 2 / 2; grid-row: 5 / 5">Join</button
   >
   <button
     on:click={onClickRefreshGamesList}
     disabled={!hasJoined}
-    style="grid-column: 3 / 3; grid-row: 6 / 6">Refresh</button
+    style="grid-column: 3 / 3; grid-row: 5 / 5">Refresh</button
   >
 </div>
 

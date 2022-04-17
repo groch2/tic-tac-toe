@@ -14,7 +14,7 @@
   let boardComponentOrigin: BoardComponentOrigin = null
   let eventSource: EventSource
   let gameBoard: GameBoard
-  let _gameName: string = null
+  let _gameInitiatorPlayerName: string = null
   let _playerName: string = null
 
   function playerLogin(event: CustomEvent) {
@@ -24,17 +24,16 @@
 
   function createGame({
     detail: {
-      'game-name': newGameName,
-      'player-name': playerName,
-      'player-position': playerPosition,
+      'initiator-player-name': initiatorPlayerName,
+      'initiator-player-position': initiatorPlayerPosition,
     },
   }: CustomEvent<CreateGameEvent>) {
     closeEventSource()
-    console.debug(`creating new game: "${newGameName}"`)
+    console.debug(`creating new game by player: "${initiatorPlayerName}"`)
     visibleComponent = VisibleComponent.Board
     boardComponentOrigin = BoardComponentOrigin.CreateNewGame
     eventSource = new EventSource(
-      `http://localhost:3000/create-game?game-name=${newGameName}&player-name=${playerName}&player-position=${playerPosition}`
+      `http://localhost:3000/create-game?initiator-player-name=${initiatorPlayerName}&initiator-player-position=${initiatorPlayerPosition}`
     )
     eventSource.onopen = () => {
       console.log('event source opened')
@@ -45,8 +44,8 @@
     gameBoard.bindToGameBeginningEvent(eventSource)
     gameBoard.bindToPlayGameEvent(eventSource)
     gameBoard.bindToEndOfGameEvent(eventSource)
-    _gameName = newGameName
-    _playerName = playerName
+    _gameInitiatorPlayerName = initiatorPlayerName
+    _playerName = _gameInitiatorPlayerName
   }
 
   function joinGame({
@@ -71,8 +70,7 @@
     }
     gameBoard.bindToPlayGameEvent(eventSource)
     gameBoard.bindToEndOfGameEvent(eventSource)
-    _gameName = gameName
-    _playerName = playerName
+    _gameInitiatorPlayerName = playerName
   }
 
   function closeEventSource() {
@@ -112,7 +110,7 @@
       bind:this={gameBoard}
       bind:boardComponentOrigin
       bind:playerName={_playerName}
-      bind:gameName={_gameName}
+      bind:gameInitiatorPlayerName={_gameInitiatorPlayerName}
       on:quit-game={quitGameEventHandler}
     />
   </div>
