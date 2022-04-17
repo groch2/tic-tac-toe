@@ -24,10 +24,11 @@ app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`)
 })
 
-const ongoingGamesByGameName: Map<string, Game> = new Map()
+// Games names that have been created, and are waiting for an opponent, in order to start
+const pendingGamesNames: Set<string> = new Set()
+const gamesByGameName: Map<string, Game> = new Map()
 const nbActivePlayersByGameName: Map<string, number> = new Map()
 const connectionsByPlayerName: Map<string, express.Response> = new Map()
-const pendingGamesNames: Set<string> = new Set()
 
 function sendEvent(
   playerConnection: express.Response,
@@ -57,9 +58,9 @@ app.get('/create-game', (request, response) => {
     playerPosition === Player.O ? playerName : undefined,
     playerPosition === Player.X ? playerName : undefined
   )
-  ongoingGamesByGameName.set(gameName, newGame)
-  nbActivePlayersByGameName.set(gameName, 1)
   pendingGamesNames.add(gameName)
+  gamesByGameName.set(gameName, newGame)
+  nbActivePlayersByGameName.set(gameName, 1)
 
   const data = `data: ${JSON.stringify({
     'game-name': gameName,
@@ -81,7 +82,7 @@ app.get('/join-game', (request, response) => {
     'player-position': playerPosition,
   } = request.query as JoinGameRequest
   console.debug(`join game request`)
-  const game = ongoingGamesByGameName.get(gameName)
+  const game = gamesByGameName.get(gameName)
   if (game === undefined) {
     throw new Error(`the game named: "${gameName}" does not exist`)
   }
@@ -150,7 +151,7 @@ app.post('/play-game', (request, response) => {
     'player-name': playerName,
     'cell-index': cellIndex,
   })
-  const game = ongoingGamesByGameName.get(gameName)
+  const game = gamesByGameName.get(gameName)
   if (game === undefined) {
     response.status(404).send(`The game named: "${gameName}" cannot be found.`)
     return
@@ -193,7 +194,7 @@ app.post('/quit-game', (request, response) => {
   const { 'game-name': gameName, 'quitter-player-name': quitterPlayerName } =
     request.body as QuitGameRequest
   console.debug({ 'quit-game-request': request.body })
-  const game = ongoingGamesByGameName.get(gameName) as Game
+  const game = gamesByGameName.get(gameName) as Game
   const quitterPlayerPosition = game.getPlayerPositionByName(quitterPlayerName)
   const winnerPlayerName =
     quitterPlayerPosition === Player.O ? game.playerX_Name : game.playerO_Name
@@ -211,16 +212,15 @@ app.post('/quit-game', (request, response) => {
   nbActivePlayers = nbActivePlayersByGameName.get(gameName) as number
   console.log({ nbActivePlayers })
   if (nbActivePlayers === 0) {
-    ongoingGamesByGameName.delete(gameName)
-    pendingGamesNames.delete(gameName)
+    gamesByGameName.delete(gameName)
   }
   response.sendStatus(200)
 })
 
 app.get('/ongoing-games', (_, response) => {
   response.json({
-    'nb-games': ongoingGamesByGameName.size,
-    'ongoing-games': [...ongoingGamesByGameName.values()].map((game) =>
+    'nb-games': gamesByGameName.size,
+    'ongoing-games': [...gamesByGameName.values()].map((game) =>
       JSON.stringify(game)
     ),
   })
