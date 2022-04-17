@@ -1,5 +1,5 @@
 export type PlayGameRequest = {
-  'game-name': string
+  'game-initiator-player-name': string
   'player-name': string
-  'cell-index': number
+  'cell-index-played': number
 }

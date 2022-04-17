@@ -1,12 +1,13 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte'
-  import { getRandomWord } from '../../../game-engine/utils'
   import { Player } from '../../../game-engine/game-engine'
+  import { getRandomWord } from '../../../game-engine/utils'
   import type { CreateGameEvent } from '../custom-events/create-game'
+  import type { JoinGameEvent } from '../custom-events/join-game'
 
   let playerName = getRandomWord(10)
   let newGameName = ''
-  let _pendingGames: Set<string> = new Set()
+  let _pendingGamesInitiatorsPlayersNames: Set<string> = new Set()
   let hasJoined = false
   let selectedGame = ''
   const dispatchEvent = createEventDispatcher()
@@ -29,23 +30,33 @@
 
   function onClickJoinGame() {
     dispatchEvent('join-game', {
-      'game-name': selectedGame,
-      'player-name': playerName,
-      'player-position': Player.X,
-    })
+      'initiator-player-name': selectedGame,
+      'joining-player-name': playerName,
+      'joining-player-position': Player.X,
+    } as JoinGameEvent)
   }
 
   function onClickRefreshGamesList() {
-    fetch('http://localhost:3000/pending-games', {
+    fetch('http://localhost:3000/games/pending', {
       method: 'GET',
     })
       .then((response) => {
-        console.log({ 'get-pending-games-reponse-status': response.status })
+        console.log({
+          'get-pending-games-initiators-players-names-reponse-status':
+            response.status,
+        })
         return response.json()
       })
       .then(
-        ({ 'pending-games': pendingGames }: { 'pending-games': string[] }) => {
-          _pendingGames = new Set(pendingGames)
+        ({
+          'pending-games-initiators-players-names':
+            pendingGamesInitiatorsPlayersNames,
+        }: {
+          'pending-games-initiators-players-names': string[]
+        }) => {
+          _pendingGamesInitiatorsPlayersNames = new Set(
+            pendingGamesInitiatorsPlayersNames
+          )
         }
       )
       .catch((error) => {
@@ -71,7 +82,8 @@
   <button
     on:click={onClickCreateGame}
     style="grid-column: 2 / 2; grid-row: 3 / 3"
-    disabled={!hasJoined || _pendingGames.has(newGameName)}
+    disabled={!hasJoined ||
+      _pendingGamesInitiatorsPlayersNames.has(newGameName)}
     >Create a new game</button
   >
   <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 4 / 4"
@@ -83,7 +95,7 @@
     style="grid-column: 1 / 1; grid-row: 5 / 5"
   >
     <option />
-    {#each [..._pendingGames] as game}
+    {#each [..._pendingGamesInitiatorsPlayersNames] as game}
       <option value={game}>{game}</option>
     {/each}
   </select>

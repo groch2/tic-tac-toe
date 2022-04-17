@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from 'svelte'
+  import { createEventDispatcher, onMount } from 'svelte'
   import { GameEngine as Game } from '../../../game-engine/game-engine'
   import { getRandomWord } from '../../../game-engine/utils'
-  import type { GameBeginningEvent } from '../../../server/game-beginning-event'
-  import type { PlayGameRequest } from '../../../server/play-game-request'
-  import type { PlayGameEvent } from '../../../server/play-game-event'
   import type { EndOfGamePlayerNotification } from '../../../server/end-of-game-player-notification'
+  import type { GameBeginningEvent } from '../../../server/game-beginning-event'
+  import type { PlayGameEvent } from '../../../server/play-game-event'
+  import type { PlayGameRequest } from '../../../server/play-game-request'
+  import { PlayerEndOfGameStatus } from '../../../server/player-end-of-game-status'
   import type { QuitGameRequest } from '../../../server/quit-game-request'
   import { BoardComponentOrigin } from '../custom-types'
-  import { PlayerEndOfGameStatus } from '../../../server/player-end-of-game-status'
 
   export let gameInitiatorPlayerName: string
   export let playerName: string
@@ -16,7 +16,9 @@
   export let boardComponentOrigin: BoardComponentOrigin
 
   export function bindToGameBeginningEvent(eventSource: EventSource) {
+    console.debug('game begining event is bound')
     eventSource.addEventListener('game-beginning', (event) => {
+      console.debug('game begining event...')
       const { 'opponent-player-name': opponentPlayerName } = JSON.parse(
         event.data
       ) as GameBeginningEvent
@@ -52,7 +54,7 @@
           playerEndOfGameStatus === PlayerEndOfGameStatus.WINNER
             ? 'won'
             : 'lost'
-        } by ${isEndOfGameByForfeit ? 'forfeit' : 'defeat'}`
+        } by opponent ${isEndOfGameByForfeit ? 'forfeit' : 'defeat'}`
       )
       isGameActive = false
     })
@@ -69,16 +71,16 @@
   const onCellClick = (cell: HTMLElement, index: number) => {
     console.debug('click on game board')
     if (game.isGameOver || game.isCellOccupied(index) || !isGameActive) return
-    fetch('http://localhost:3000/play-game', {
+    fetch('http://localhost:3000/game/play', {
       method: 'POST',
       cache: 'no-cache',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        'game-name': gameInitiatorPlayerName,
+        'game-initiator-player-name': gameInitiatorPlayerName,
         'player-name': playerName,
-        'cell-index': index,
+        'cell-index-played': index,
       } as PlayGameRequest),
     })
       .then((response) => {
@@ -107,7 +109,7 @@
 
   const dispatchEvent = createEventDispatcher()
   function quit() {
-    fetch('http://localhost:3000/quit-game', {
+    fetch('http://localhost:3000/game/quit', {
       method: 'POST',
       cache: 'no-cache',
       headers: {
