@@ -8,14 +8,15 @@
   import type { PlayGameRequest } from '../../../server/play-game-request'
   import { PlayerEndOfGameStatus } from '../../../server/player-end-of-game-status'
   import type { QuitGameRequest } from '../../../server/quit-game-request'
-  import { BoardComponentOrigin } from '../custom-types'
+  import { BoardComponentDisplayCause } from '../custom-types'
 
   export let gameInitiatorPlayerName: string
   export let playerName: string
   export let isGameActive = false
-  export let boardComponentOrigin: BoardComponentOrigin
+  export let boardComponentDisplayCause: BoardComponentDisplayCause
+  export let eventSource: EventSource
 
-  export function bindToGameBeginningEvent(eventSource: EventSource) {
+  function bindToGameBeginningEvent(eventSource: EventSource) {
     console.debug('game begining event is bound')
     eventSource.addEventListener('game-beginning', (event) => {
       console.debug('game begining event...')
@@ -27,7 +28,7 @@
     })
   }
 
-  export function bindToPlayGameEvent(eventSource: EventSource) {
+  function bindToPlayGameEvent(eventSource: EventSource) {
     eventSource.addEventListener('play-game', (event) => {
       console.debug(`play game event`)
       const { 'cell-index-played': cellIndex } = JSON.parse(
@@ -41,7 +42,7 @@
     })
   }
 
-  export function bindToEndOfGameEvent(eventSource: EventSource) {
+  function bindToEndOfGameEvent(eventSource: EventSource) {
     console.log('binding to end of game event')
     eventSource.addEventListener('end-of-game', (event) => {
       console.log('end of game event received')
@@ -139,7 +140,12 @@
   let cells: HTMLCollection
   onMount(() => {
     cells = document.querySelector('div.board').children
-    isGameActive = boardComponentOrigin === BoardComponentOrigin.CreateNewGame
+    isGameActive =
+      boardComponentDisplayCause === BoardComponentDisplayCause.JoinExistingGame
+    bindToGameBeginningEvent(eventSource)
+    bindToPlayGameEvent(eventSource)
+    bindToEndOfGameEvent(eventSource)
+    console.debug('all events are bound')
   })
 </script>
 

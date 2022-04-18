@@ -1,22 +1,18 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte'
   import type { CreateGameRequest } from '../../server/create-game-request'
+  import type { GameBeginningEvent } from '../../server/game-beginning-event'
   import type { JoinGameRequest } from '../../server/join-game-request'
   import GameBoard from './components/game-board.svelte'
   import GameHub from './components/game-hub.svelte'
   import type { CreateGameEvent } from './custom-events/create-game'
   import type { JoinGameEvent } from './custom-events/join-game'
   import type { PlayerLoginEvent } from './custom-events/player-login'
-  import { BoardComponentOrigin } from './custom-types'
+  import { BoardComponentDisplayCause } from './custom-types'
 
-  enum VisibleComponent {
-    Hub,
-    Board,
-  }
-  let visibleComponent = VisibleComponent.Hub
-  let boardComponentOrigin: BoardComponentOrigin = null
+  let boardComponentDisplayCause: BoardComponentDisplayCause = null
   let eventSource: EventSource
-  let gameBoard: GameBoard
+  let activeGameComponent: typeof GameHub | typeof GameBoard = GameHub
   let _gameInitiatorPlayerName: string = null
   let _playerName: string = null
 
@@ -48,8 +44,8 @@
 
   function createGame({
     detail: {
-      'initiator-player-name': initiatorPlayerName,
-      'initiator-player-position': initiatorPlayerPosition,
+      'game-initiator-player-name': gameInitiatorPlayerName,
+      'game-initiator-player-position': gameInitiatorPlayerPosition,
     },
   }: CustomEvent<CreateGameEvent>) {
     if (eventSource?.readyState !== EventSource.OPEN) {
@@ -62,8 +58,8 @@
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        'initiator-player-name': initiatorPlayerName,
-        'initiator-player-position': initiatorPlayerPosition,
+        'initiator-player-name': gameInitiatorPlayerName,
+        'initiator-player-position': gameInitiatorPlayerPosition,
       } as CreateGameRequest),
     })
       .then((response) => {
@@ -73,13 +69,10 @@
             'status-text': response.statusText,
           },
         })
-        visibleComponent = VisibleComponent.Board
-        boardComponentOrigin = BoardComponentOrigin.CreateNewGame
-        gameBoard.bindToGameBeginningEvent(eventSource)
-        gameBoard.bindToPlayGameEvent(eventSource)
-        gameBoard.bindToEndOfGameEvent(eventSource)
-        _gameInitiatorPlayerName = initiatorPlayerName
+        boardComponentDisplayCause = BoardComponentDisplayCause.CreateNewGame
+        _gameInitiatorPlayerName = gameInitiatorPlayerName
         _playerName = _gameInitiatorPlayerName
+        activeGameComponent = GameBoard
       })
       .catch((error) => {
         console.error('Error:', error)
@@ -88,7 +81,7 @@
 
   function joinGame({
     detail: {
-      'initiator-player-name': initiatorPlayerName,
+      'game-initiator-player-name': gameInitiatorPlayerName,
       'joining-player-name': joiningPlayerName,
       'joining-player-position': joiningPlayerPosition,
     },
@@ -100,7 +93,7 @@
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        'game-initiator-player-name': initiatorPlayerName,
+        'game-initiator-player-name': gameInitiatorPlayerName,
         'joining-player-name': joiningPlayerName,
         'joining-player-position': joiningPlayerPosition,
       } as JoinGameRequest),
@@ -112,11 +105,10 @@
             'status-text': response.statusText,
           },
         })
-        visibleComponent = VisibleComponent.Board
-        boardComponentOrigin = BoardComponentOrigin.JoinExistingGame
-        gameBoard.bindToPlayGameEvent(eventSource)
-        gameBoard.bindToEndOfGameEvent(eventSource)
-        _gameInitiatorPlayerName = initiatorPlayerName
+        boardComponentDisplayCause = BoardComponentDisplayCause.JoinExistingGame
+        _gameInitiatorPlayerName = gameInitiatorPlayerName
+        _playerName = joiningPlayerName
+        activeGameComponent = GameBoard
       })
       .catch((error) => {
         console.error('Error:', error)
@@ -124,7 +116,7 @@
   }
 
   function quitGameEventHandler() {
-    visibleComponent = VisibleComponent.Hub
+    activeGameComponent = GameHub
   }
   onMount(() => {
     document.addEventListener('quit-game', quitGameEventHandler)
@@ -135,29 +127,14 @@
   })
 </script>
 
-<main>
-  <div
-    style="display:{visibleComponent === VisibleComponent.Hub
-      ? 'initial'
-      : 'none'}"
-  >
-    <GameHub
-      on:player-login={playerLogin}
-      on:create-game={createGame}
-      on:join-game={joinGame}
-    />
-  </div>
-  <div
-    style="display:{visibleComponent === VisibleComponent.Board
-      ? 'initial'
-      : 'none'}"
-  >
-    <GameBoard
-      bind:this={gameBoard}
-      bind:boardComponentOrigin
-      bind:playerName={_playerName}
-      bind:gameInitiatorPlayerName={_gameInitiatorPlayerName}
-      on:quit-game={quitGameEventHandler}
-    />
-  </div>
-</main>
+<svelte:component
+  this={activeGameComponent}
+  on:player-login={playerLogin}
+  on:create-game={createGame}
+  on:join-game={joinGame}
+  on:quit-game={quitGameEventHandler}
+  bind:boardComponentDisplayCause
+  bind:playerName={_playerName}
+  bind:gameInitiatorPlayerName={_gameInitiatorPlayerName}
+  bind:eventSource
+/>

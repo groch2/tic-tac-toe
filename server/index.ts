@@ -28,7 +28,7 @@ app.listen(port, () => {
 // Games that have at lease one registered player
 const gamesByGameInitiatorPlayerName: Map<string, Game> = new Map()
 // Games names that have been created, and are waiting for an opponent, in order to start
-const pendingGameByGameInitiatorPlayerName: Set<string> = new Set()
+const pendingGamesInitiatorPlayerName: Set<string> = new Set()
 const nbActivePlayersByGameInitiatorPlayerName: Map<string, number> = new Map()
 const connectionsByPlayerName: Map<string, express.Response> = new Map()
 
@@ -68,10 +68,10 @@ app.post('/game/create', (request, response) => {
     initiatorPlayerPosition === Player.O ? initiatorPlayerName : undefined,
     initiatorPlayerPosition === Player.X ? initiatorPlayerName : undefined
   )
-  pendingGameByGameInitiatorPlayerName.add(initiatorPlayerName)
+  pendingGamesInitiatorPlayerName.add(initiatorPlayerName)
   gamesByGameInitiatorPlayerName.set(initiatorPlayerName, newGame)
   nbActivePlayersByGameInitiatorPlayerName.set(initiatorPlayerName, 1)
-  response.sendStatus(200)
+  response.sendStatus(200).end()
   console.debug(`new game initiated by player : ${initiatorPlayerName}`)
 })
 
@@ -110,7 +110,7 @@ app.post('/game/join', (request, response) => {
     console.debug(
       `the game initiated by: "${game.initiatorPlayerName}" is player complete`
     )
-    pendingGameByGameInitiatorPlayerName.delete(game.initiatorPlayerName)
+    pendingGamesInitiatorPlayerName.delete(game.initiatorPlayerName)
     const gameInitiatorPlayerConnection = connectionsByPlayerName.get(
       gameInitiatorPlayerName
     )
@@ -125,7 +125,7 @@ app.post('/game/join', (request, response) => {
       `game begining event sent to player: "${gameInitiatorPlayerName}"`
     )
   }
-  response.sendStatus(200)
+  response.sendStatus(200).end()
 })
 
 app.post('/game/play', (request, response) => {
@@ -143,23 +143,25 @@ app.post('/game/play', (request, response) => {
       .send(
         `The game started by player: "${gameInitiatorPlayerName}" cannot be found.`
       )
+      .end()
     return
   }
   if (game.isGameOver) {
     response
       .status(400)
       .send(`The game started by player: "${gameInitiatorPlayerName}" is over`)
+      .end()
     return
   }
   if (
     (game.currentPlayer === Player.O && game.playerO_Name !== playerName) ||
     (game.currentPlayer === Player.X && game.playerX_Name !== playerName)
   ) {
-    response.status(400).send(`Wrong player: "${playerName}"`)
+    response.status(400).send(`Wrong player: "${playerName}"`).end()
     return
   }
   if (game.isCellOccupied(cellIndex)) {
-    response.status(400).send(`Position already occupied: "${cellIndex}"`)
+    response.status(400).send(`Position already occupied: "${cellIndex}"`).end()
     return
   }
   const previousPlayer = game.currentPlayer
@@ -177,7 +179,7 @@ app.post('/game/play', (request, response) => {
     )
   }
   sendEvent(nextPlayerConnection, 'play-game', nextPlayerGameEvent)
-  response.sendStatus(200)
+  response.sendStatus(200).end()
   console.debug('played:', { nextPlayerGameEvent })
 })
 
@@ -215,25 +217,29 @@ app.post('/game/quit', (request, response) => {
   console.log({ nbActivePlayers })
   if (nbActivePlayers === 0) {
     gamesByGameInitiatorPlayerName.delete(gameInitiatorPlayerName)
-    pendingGameByGameInitiatorPlayerName.delete(gameInitiatorPlayerName)
+    pendingGamesInitiatorPlayerName.delete(gameInitiatorPlayerName)
   }
-  response.sendStatus(200)
+  response.sendStatus(200).end()
 })
 
 app.get('/games/ongoing', (_, response) => {
-  response.json({
-    'nb-games': gamesByGameInitiatorPlayerName.size,
-    'ongoing-games-initiators-players-names': [
-      ...gamesByGameInitiatorPlayerName.values(),
-    ].map((game) => JSON.stringify(game)),
-  })
+  response
+    .json({
+      'nb-games': gamesByGameInitiatorPlayerName.size,
+      'ongoing-games-initiators-players-names': [
+        ...gamesByGameInitiatorPlayerName.values(),
+      ].map((game) => JSON.stringify(game)),
+    })
+    .end()
 })
 
 app.get('/games/pending', (_, response) => {
-  response.json({
-    'nb-games': pendingGameByGameInitiatorPlayerName.size,
-    'pending-games-initiators-players-names': [
-      ...pendingGameByGameInitiatorPlayerName,
-    ].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
-  })
+  response
+    .json({
+      'nb-games': pendingGamesInitiatorPlayerName.size,
+      'pending-games-initiators-players-names': [
+        ...pendingGamesInitiatorPlayerName,
+      ].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    })
+    .end()
 })

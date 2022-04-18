@@ -23,14 +23,14 @@
 
   function onClickCreateGame() {
     dispatchEvent('create-game', {
-      'initiator-player-name': playerName,
-      'initiator-player-position': Player.O,
+      'game-initiator-player-name': playerName,
+      'game-initiator-player-position': Player.O,
     } as CreateGameEvent)
   }
 
   function onClickJoinGame() {
     dispatchEvent('join-game', {
-      'initiator-player-name': selectedGame,
+      'game-initiator-player-name': selectedGame,
       'joining-player-name': playerName,
       'joining-player-position': Player.X,
     } as JoinGameEvent)

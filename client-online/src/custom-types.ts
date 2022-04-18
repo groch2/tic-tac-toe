@@ -1,4 +1,4 @@
-export enum BoardComponentOrigin {
+export enum BoardComponentDisplayCause {
   CreateNewGame,
   JoinExistingGame,
 }
