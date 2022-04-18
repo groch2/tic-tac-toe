@@ -1,6 +1,9 @@
 **/node_modules/
 **/public/build/
-client/**/*.js
+client-online/**/*.js
+client-online/**/*.js.map
+client-local/**/*.js
+client-local/**/*.js.map
 !client/rollup.config.js
 server/**/*.js
 game-engine/**/*.js
