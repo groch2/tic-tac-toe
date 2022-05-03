@@ -25,7 +25,6 @@ app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`)
 })
 
-// Games that have at lease one registered player
 const gamesByGameInitiatorPlayerName: Map<string, Game> = new Map()
 // Games names that have been created, and are waiting for an opponent, in order to start
 const pendingGamesInitiatorPlayerName: Set<string> = new Set()
@@ -37,13 +36,10 @@ function sendEvent(
   event: string,
   data: any
 ) {
-  console.debug(`sending event: ${event}`)
   playerConnection.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
-  console.debug('event sent')
 }
 
 app.get('/player/login', (request, response) => {
-  console.debug('player login request begin...')
   const { 'player-name': playerName } = request.query as PlayerLoginRequest
   const headers = {
     'Content-Type': 'text/event-stream',
@@ -56,7 +52,6 @@ app.get('/player/login', (request, response) => {
     console.log(`player: "${playerName}" connection closed`)
     connectionsByPlayerName.delete(playerName)
   })
-  console.debug(`player: ${playerName} is connected to the server`)
 })
 
 app.post('/game/create', (request, response) => {
@@ -64,7 +59,6 @@ app.post('/game/create', (request, response) => {
     'initiator-player-name': initiatorPlayerName,
     'initiator-player-position': initiatorPlayerPosition,
   } = request.body as CreateGameRequest
-  console.debug(`create game request`, request.body)
   const newGame = new Game(
     initiatorPlayerName,
     initiatorPlayerPosition === Player.O ? initiatorPlayerName : undefined,
@@ -74,11 +68,9 @@ app.post('/game/create', (request, response) => {
   gamesByGameInitiatorPlayerName.set(initiatorPlayerName, newGame)
   nbActivePlayersByGameInitiatorPlayerName.set(initiatorPlayerName, 1)
   response.sendStatus(200).end()
-  console.debug(`new game initiated by player : ${initiatorPlayerName}`)
 })
 
 app.post('/game/join', (request, response) => {
-  console.debug('join game request', JSON.stringify(request.body))
   const {
     'game-initiator-player-name': gameInitiatorPlayerName,
     'joining-player-name': joiningPlayerName,
@@ -108,16 +100,7 @@ app.post('/game/join', (request, response) => {
       gameInitiatorPlayerName
     ) as number) + 1
   )
-  console.debug({
-    'game-initiator-player-name': gameInitiatorPlayerName,
-    'nb-players': nbActivePlayersByGameInitiatorPlayerName.get(
-      gameInitiatorPlayerName
-    ),
-  })
   if (game.isComplete) {
-    console.debug(
-      `the game initiated by: "${game.initiatorPlayerName}" is player complete`
-    )
     pendingGamesInitiatorPlayerName.delete(game.initiatorPlayerName)
     const gameInitiatorPlayerConnection = connectionsByPlayerName.get(
       gameInitiatorPlayerName
@@ -125,27 +108,20 @@ app.post('/game/join', (request, response) => {
     if (gameInitiatorPlayerConnection === undefined) {
       throw new Error('the game initiator player connection has been lost')
     }
-    console.debug(`game initiator player connection found`)
-    sendEvent(gameInitiatorPlayerConnection, 'test', { message: 'coucou' })
     sendEvent(gameInitiatorPlayerConnection, 'game-beginning', {
       event: 'game-beginning',
       'opponent-player-name': joiningPlayerName,
     } as GameBeginningEvent)
-    console.debug(
-      `game begining event sent to player: "${gameInitiatorPlayerName}"`
-    )
   }
   response.sendStatus(200).end()
 })
 
 app.post('/game/play', (request, response) => {
-  console.log('play game request begins...')
   const {
     'game-initiator-player-name': gameInitiatorPlayerName,
     'player-name': playerName,
     'cell-index-played': cellIndex,
   } = request.body as PlayGameRequest
-  console.log('play game request body:', request.body as PlayGameRequest)
   const game = gamesByGameInitiatorPlayerName.get(gameInitiatorPlayerName)
   if (game === undefined) {
     response
@@ -190,7 +166,6 @@ app.post('/game/play', (request, response) => {
   }
   sendEvent(nextPlayerConnection, 'play-game', nextPlayerGameEvent)
   response.sendStatus(200).end()
-  console.debug('played:', { nextPlayerGameEvent })
 })
 
 app.post('/game/quit', (request, response) => {
@@ -198,7 +173,6 @@ app.post('/game/quit', (request, response) => {
     'game-initiator-player-name': gameInitiatorPlayerName,
     'quitter-player-name': quitterPlayerName,
   } = request.body as QuitGameRequest
-  console.debug({ 'quit-game-request': request.body })
   const game = gamesByGameInitiatorPlayerName.get(
     gameInitiatorPlayerName
   ) as Game
@@ -224,7 +198,6 @@ app.post('/game/quit', (request, response) => {
   nbActivePlayers = nbActivePlayersByGameInitiatorPlayerName.get(
     gameInitiatorPlayerName
   ) as number
-  console.log({ nbActivePlayers })
   if (nbActivePlayers === 0) {
     gamesByGameInitiatorPlayerName.delete(gameInitiatorPlayerName)
     pendingGamesInitiatorPlayerName.delete(gameInitiatorPlayerName)
