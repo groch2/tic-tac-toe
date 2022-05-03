@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte'
+  import type { PlayerPosition } from '../../game-engine/game-engine'
   import type { CreateGameRequest } from '../../server/create-game-request'
   import type { JoinGameRequest } from '../../server/join-game-request'
   import GameBoard from './components/game-board.svelte'
@@ -14,8 +15,10 @@
   }
 
   let eventSource: EventSource
+  let _isPlayerGameInitiator: boolean = null
   let _gameInitiatorPlayerName: string = null
   let _playerName: string = null
+  let _playerPosition: PlayerPosition = null
   let activeComponent = ActiveComponent.Hub
 
   function playerLoginEventHandler({
@@ -30,18 +33,6 @@
     }
     eventSource.onerror = () => {
       console.log(`event source error`)
-    }
-    eventSource.addEventListener('game-beginning', (event) => {
-      console.debug('in App.svelte component', 'game begining event...')
-      console.log('in App.svelte component', 'game begining event...')
-    })
-    eventSource.addEventListener('test', (event) => {
-      console.log('test event handling, client side')
-    })
-    eventSource.onmessage = (eventMessage) => {
-      console.debug('in App.svelte component, onmessage handler', {
-        'event-source-message': eventMessage,
-      })
     }
     console.debug({
       'event-source-state': ((eventSourceState) =>
@@ -73,16 +64,14 @@
         'initiator-player-position': gameInitiatorPlayerPosition,
       } as CreateGameRequest),
     })
-      .then((response) => {
-        console.log({
-          'create-game-response': {
-            'response-status': response.status,
-            'status-text': response.statusText,
-          },
-        })
-        _gameInitiatorPlayerName = gameInitiatorPlayerName
-        _playerName = _gameInitiatorPlayerName
-        activeComponent = ActiveComponent.GameBoard
+      .then(({ ok }) => {
+        if (ok) {
+          _isPlayerGameInitiator = true
+          _gameInitiatorPlayerName = gameInitiatorPlayerName
+          _playerName = gameInitiatorPlayerName
+          _playerPosition = gameInitiatorPlayerPosition
+          activeComponent = ActiveComponent.GameBoard
+        }
       })
       .catch((error) => {
         console.error('Error:', error)
@@ -108,16 +97,14 @@
         'joining-player-position': joiningPlayerPosition,
       } as JoinGameRequest),
     })
-      .then((response) => {
-        console.log({
-          'join-game-response': {
-            'response-status': response.status,
-            'status-text': response.statusText,
-          },
-        })
-        _gameInitiatorPlayerName = gameInitiatorPlayerName
-        _playerName = joiningPlayerName
-        activeComponent = ActiveComponent.GameBoard
+      .then(({ ok }) => {
+        if (ok) {
+          _isPlayerGameInitiator = false
+          _gameInitiatorPlayerName = gameInitiatorPlayerName
+          _playerName = joiningPlayerName
+          _playerPosition = joiningPlayerPosition
+          activeComponent = ActiveComponent.GameBoard
+        }
       })
       .catch((error) => {
         console.error('Error:', error)
@@ -145,8 +132,10 @@
 {:else if activeComponent == ActiveComponent.GameBoard}
   <GameBoard
     on:quit-game={quitGameEventHandler}
+    bind:isPlayerGameInitiator={_isPlayerGameInitiator}
     bind:gameInitiatorPlayerName={_gameInitiatorPlayerName}
     bind:playerName={_playerName}
+    bind:playerPosition={_playerPosition}
     bind:eventSource
   />
 {/if}

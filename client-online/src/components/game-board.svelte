@@ -1,6 +1,9 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte'
-  import { GameEngine as Game } from '../../../game-engine/game-engine'
+  import {
+    GameEngine as Game,
+    PlayerPosition,
+  } from '../../../game-engine/game-engine'
   import { getRandomWord } from '../../../game-engine/utils'
   import type { EndOfGamePlayerNotification } from '../../../server/end-of-game-player-notification'
   import type { GameBeginningEvent } from '../../../server/game-beginning-event'
@@ -9,36 +12,48 @@
   import { PlayerEndOfGameStatus } from '../../../server/player-end-of-game-status'
   import type { QuitGameRequest } from '../../../server/quit-game-request'
 
-  export let gameInitiatorPlayerName: string
   export let playerName: string
+  export let playerPosition: PlayerPosition = null
+  export let isPlayerGameInitiator: boolean
+  export let gameInitiatorPlayerName: string
   export let eventSource: EventSource
-  let isGameActive = false
+
+  enum Turn {
+    Player,
+    Opponent,
+  }
+
+  let isGameStarted = false
+  let turn: Turn = null
+  let opponentPlayerName: string = null
+  $: opponentPlayerPosition =
+    playerPosition === null
+      ? null
+      : playerPosition === PlayerPosition.O
+      ? PlayerPosition.X
+      : PlayerPosition.O
 
   function bindToGameBeginningEvent(eventSource: EventSource) {
     eventSource.addEventListener('game-beginning', (event) => {
-      console.debug('game begining event...')
-      const { 'opponent-player-name': opponentPlayerName } = JSON.parse(
+      const { 'opponent-player-name': _opponentPlayerName } = JSON.parse(
         event.data
       ) as GameBeginningEvent
-      console.log(`playing against: "${opponentPlayerName}"`)
-      isGameActive = true
+      opponentPlayerName = _opponentPlayerName
+      isGameStarted = true
+      turn = Turn.Player
     })
-    console.debug('game begining event is bound')
   }
 
   function bindToPlayGameEvent(eventSource: EventSource) {
     eventSource.addEventListener('play-game', (event) => {
-      console.debug(`play game event`)
       const { 'cell-index-played': cellIndex } = JSON.parse(
         event.data
       ) as PlayGameEvent
-      console.log({ 'cell-played-by-opponent': cellIndex })
       cells[cellIndex].innerHTML = game.currentPlayer
       game.play(cellIndex)
       game = game
-      isGameActive = true
+      turn = Turn.Player
     })
-    console.debug('play game event is bound')
   }
 
   function bindToEndOfGameEvent(eventSource: EventSource) {
@@ -55,9 +70,8 @@
             : 'lost'
         } by opponent ${isEndOfGameByForfeit ? 'forfeit' : 'defeat'}`
       )
-      isGameActive = false
+      turn = null
     })
-    console.log('end of game event is bound')
   }
 
   const newGame = () => {
@@ -69,8 +83,8 @@
 
   let game = newGame()
   const onCellClick = (cell: HTMLElement, index: number) => {
-    console.debug('click on game board')
-    if (game.isGameOver || game.isCellOccupied(index) || !isGameActive) return
+    if (game.isGameOver || game.isCellOccupied(index) || turn !== Turn.Player)
+      return
     fetch('http://localhost:3000/game/play', {
       method: 'POST',
       cache: 'no-cache',
@@ -88,7 +102,7 @@
           cell.innerText = game.currentPlayer
           game.play(index)
           game = game
-          isGameActive = false
+          turn = Turn.Opponent
         } else {
           console.log('Network error on play request', {
             'response-status': response.status,
@@ -99,12 +113,6 @@
       .catch((error) => {
         console.error('Error:', error)
       })
-  }
-
-  export const playGameEventHandler = (lastMoveCell: number) => {
-    game.play(lastMoveCell)
-    game = game
-    isGameActive = true
   }
 
   const dispatchEvent = createEventDispatcher()
@@ -142,13 +150,44 @@
     bindToGameBeginningEvent(eventSource)
     bindToPlayGameEvent(eventSource)
     bindToEndOfGameEvent(eventSource)
-    console.debug('all events are bound')
+    isGameStarted = !isPlayerGameInitiator
+    turn = !isPlayerGameInitiator ? Turn.Opponent : null
+    opponentPlayerName = !isPlayerGameInitiator ? gameInitiatorPlayerName : null
   })
 </script>
 
 <div class="main-container">
-  <h1>{gameInitiatorPlayerName}</h1>
-  <div class="board" class:disabled-board={!isGameActive}>
+  <table class="players-data">
+    <thead>
+      <tr>
+        <th>Players</th>
+        <th>Name</th>
+        <th>Position</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>you</td>
+        <td>{playerName}</td>
+        <td>{playerPosition}</td>
+      </tr>
+      <tr>
+        <td>opponent</td>
+        <td
+          >{#if !isGameStarted}
+            waiting for opponent
+          {:else}
+            {opponentPlayerName}
+          {/if}
+        </td>
+        <td>{opponentPlayerPosition}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div
+    class="board"
+    class:disabled-board={!isGameStarted || turn === Turn.Opponent}
+  >
     {#each new Array(9).fill(0) as _, index}
       <div on:click={(event) => onCellClick(event.currentTarget, index)} />
     {/each}
@@ -174,11 +213,24 @@
     flex-direction: column;
     gap: 10px;
   }
-  h1 {
+  table.players-data,
+  table.players-data th,
+  table.players-data td {
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+  table.players-data th,
+  table.players-data td {
     text-align: center;
-    font-size: larger;
-    margin-block-start: 0;
-    margin-block-end: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+  table.players-data td:first-child {
+    font-weight: bold;
+    text-align: end;
+  }
+  table.players-data th:first-child {
+    font-size: large;
   }
   .board {
     --cell-size: 3em;

@@ -1,6 +1,6 @@
-import type { Player } from '../game-engine/game-engine'
+import type { PlayerPosition } from '../game-engine/game-engine'
 
 export interface PlayGameEvent {
-  'previous-player': Player
+  'previous-player': PlayerPosition
   'cell-index-played': number
 }

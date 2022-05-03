@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte'
-  import { Player } from '../../../game-engine/game-engine'
+  import { PlayerPosition } from '../../../game-engine/game-engine'
   import { getRandomWord } from '../../../game-engine/utils'
   import type { CreateGameEvent } from '../custom-events/create-game'
   import type { JoinGameEvent } from '../custom-events/join-game'
@@ -24,7 +24,7 @@
   function onClickCreateGame() {
     dispatchEvent('create-game', {
       'game-initiator-player-name': playerName,
-      'game-initiator-player-position': Player.O,
+      'game-initiator-player-position': PlayerPosition.O,
     } as CreateGameEvent)
   }
 
@@ -32,7 +32,7 @@
     dispatchEvent('join-game', {
       'game-initiator-player-name': selectedGame,
       'joining-player-name': playerName,
-      'joining-player-position': Player.X,
+      'joining-player-position': PlayerPosition.X,
     } as JoinGameEvent)
   }
 

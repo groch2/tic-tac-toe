@@ -9,12 +9,12 @@ const allAxes: number[][] = [
   ...columns,
   ...rows,
 ]
-export enum Player {
+export enum PlayerPosition {
   O = 'O',
   X = 'X',
 }
 export class GameEngine {
-  private _board: (Player | null)[]
+  private _board: (PlayerPosition | null)[]
   public get board() {
     return [...this._board]
   }
@@ -24,19 +24,19 @@ export class GameEngine {
     public playerX_Name?: string
   ) {
     this._board = new Array(9).fill(null)
-    this._currentPlayer = Player.O
+    this._currentPlayer = PlayerPosition.O
   }
   private axeValues = (axe: number[]) => axe.map((index) => this._board[index])
-  private isPlayerWinning(player: Player) {
+  private isPlayerWinning(player: PlayerPosition) {
     return allAxes.some((axe) =>
       this.axeValues(axe).every((value) => value === player)
     )
   }
   public get isPlayerO_Winning() {
-    return this.isPlayerWinning(Player.O)
+    return this.isPlayerWinning(PlayerPosition.O)
   }
   public get isPlayerX_Winning() {
-    return this.isPlayerWinning(Player.X)
+    return this.isPlayerWinning(PlayerPosition.X)
   }
   public get isDraw() {
     return (
@@ -45,13 +45,13 @@ export class GameEngine {
       this._board.every((value) => value !== null)
     )
   }
-  private _currentPlayer: Player
+  private _currentPlayer: PlayerPosition
   public get currentPlayer() {
     return this._currentPlayer
   }
   public get currentPlayerName(): string {
     return (
-      this.currentPlayer === Player.O ? this.playerO_Name : this.playerX_Name
+      this.currentPlayer === PlayerPosition.O ? this.playerO_Name : this.playerX_Name
     ) as string
   }
   public get isComplete(): boolean {
@@ -69,7 +69,7 @@ export class GameEngine {
       this._isGameOver = true
       return
     }
-    this._currentPlayer = this._currentPlayer === Player.O ? Player.X : Player.O
+    this._currentPlayer = this._currentPlayer === PlayerPosition.O ? PlayerPosition.X : PlayerPosition.O
   }
   private _isGameOver = false
   public get isGameOver() {
@@ -78,13 +78,13 @@ export class GameEngine {
   public isCellOccupied(cellIndex: number) {
     return this._board[cellIndex] !== null
   }
-  public getPlayerNameByPosition(playerPosition: Player) {
+  public getPlayerNameByPosition(playerPosition: PlayerPosition) {
     return (
-      playerPosition === Player.O ? this.playerO_Name : this.playerX_Name
+      playerPosition === PlayerPosition.O ? this.playerO_Name : this.playerX_Name
     ) as string
   }
   public getPlayerPositionByName(playerName: string) {
-    return playerName === this.playerO_Name ? Player.O : Player.X
+    return playerName === this.playerO_Name ? PlayerPosition.O : PlayerPosition.X
   }
   toJSON() {
     return Object.fromEntries(

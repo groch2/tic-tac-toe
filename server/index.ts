@@ -1,7 +1,7 @@
 import bodyParser from 'body-parser'
 import cors from 'cors'
 import express from 'express'
-import { GameEngine as Game, Player } from '../game-engine/game-engine'
+import { GameEngine as Game, PlayerPosition } from '../game-engine/game-engine'
 import { CreateGameRequest } from './create-game-request'
 import { EndOfGamePlayerNotification } from './end-of-game-player-notification'
 import { GameBeginningEvent } from './game-beginning-event'
@@ -61,8 +61,8 @@ app.post('/game/create', (request, response) => {
   } = request.body as CreateGameRequest
   const newGame = new Game(
     initiatorPlayerName,
-    initiatorPlayerPosition === Player.O ? initiatorPlayerName : undefined,
-    initiatorPlayerPosition === Player.X ? initiatorPlayerName : undefined
+    initiatorPlayerPosition === PlayerPosition.O ? initiatorPlayerName : undefined,
+    initiatorPlayerPosition === PlayerPosition.X ? initiatorPlayerName : undefined
   )
   pendingGamesInitiatorPlayerName.add(initiatorPlayerName)
   gamesByGameInitiatorPlayerName.set(initiatorPlayerName, newGame)
@@ -82,13 +82,13 @@ app.post('/game/join', (request, response) => {
       `the game named: "${gameInitiatorPlayerName}" does not exist`
     )
   }
-  if (joiningPlayerPosition === Player.O) {
+  if (joiningPlayerPosition === PlayerPosition.O) {
     if (game.playerO_Name !== undefined) {
       throw new Error('Player position O is already occupied')
     }
     game.playerO_Name = joiningPlayerName
   }
-  if (joiningPlayerPosition === Player.X) {
+  if (joiningPlayerPosition === PlayerPosition.X) {
     if (game.playerX_Name !== undefined) {
       throw new Error('Player position X is already occupied')
     }
@@ -140,8 +140,8 @@ app.post('/game/play', (request, response) => {
     return
   }
   if (
-    (game.currentPlayer === Player.O && game.playerO_Name !== playerName) ||
-    (game.currentPlayer === Player.X && game.playerX_Name !== playerName)
+    (game.currentPlayer === PlayerPosition.O && game.playerO_Name !== playerName) ||
+    (game.currentPlayer === PlayerPosition.X && game.playerX_Name !== playerName)
   ) {
     response.status(400).send(`Wrong player: "${playerName}"`).end()
     return
@@ -178,7 +178,7 @@ app.post('/game/quit', (request, response) => {
   ) as Game
   const quitterPlayerPosition = game.getPlayerPositionByName(quitterPlayerName)
   const winnerPlayerName =
-    quitterPlayerPosition === Player.O ? game.playerX_Name : game.playerO_Name
+    quitterPlayerPosition === PlayerPosition.O ? game.playerX_Name : game.playerO_Name
   if (winnerPlayerName !== undefined) {
     const winnerConnection = connectionsByPlayerName.get(
       winnerPlayerName
