@@ -31,14 +31,18 @@
     eventSource.onerror = () => {
       console.log(`event source error`)
     }
+    eventSource.addEventListener('game-beginning', (event) => {
+      console.debug('in App.svelte component', 'game begining event...')
+      console.log('in App.svelte component', 'game begining event...')
+    })
+    eventSource.addEventListener('test', (event) => {
+      console.log('test event handling, client side')
+    })
     eventSource.onmessage = (eventMessage) => {
-      console.debug('in App.svelte component', {
+      console.debug('in App.svelte component, onmessage handler', {
         'event-source-message': eventMessage,
       })
     }
-    eventSource.addEventListener('game-beginning', (event) => {
-      console.debug('in App.svelte component', 'game begining event...')
-    })
     console.debug({
       'event-source-state': ((eventSourceState) =>
         new Map<number, string>([

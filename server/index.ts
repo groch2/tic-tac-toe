@@ -50,7 +50,7 @@ app.get('/player/login', (request, response) => {
     Connection: 'keep-alive',
     'Cache-Control': 'no-cache',
   }
-  response.writeHead(200, headers).write('ok')
+  response.writeHead(200, headers).write(`ok\n\n`)
   connectionsByPlayerName.set(playerName, response)
   request.on('close', () => {
     console.log(`player: "${playerName}" connection closed`)
@@ -78,12 +78,12 @@ app.post('/game/create', (request, response) => {
 })
 
 app.post('/game/join', (request, response) => {
+  console.debug('join game request', JSON.stringify(request.body))
   const {
     'game-initiator-player-name': gameInitiatorPlayerName,
     'joining-player-name': joiningPlayerName,
     'joining-player-position': joiningPlayerPosition,
   } = request.body as JoinGameRequest
-  console.debug(`join game request`)
   const game = gamesByGameInitiatorPlayerName.get(gameInitiatorPlayerName)
   if (game === undefined) {
     throw new Error(
@@ -126,7 +126,9 @@ app.post('/game/join', (request, response) => {
       throw new Error('the game initiator player connection has been lost')
     }
     console.debug(`game initiator player connection found`)
+    sendEvent(gameInitiatorPlayerConnection, 'test', { message: 'coucou' })
     sendEvent(gameInitiatorPlayerConnection, 'game-beginning', {
+      event: 'game-beginning',
       'opponent-player-name': joiningPlayerName,
     } as GameBeginningEvent)
     console.debug(
