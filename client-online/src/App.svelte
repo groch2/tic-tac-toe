@@ -18,7 +18,7 @@
   let _playerName: string = null
   let activeComponent = ActiveComponent.Hub
 
-  function playerLogin({
+  function playerLoginEventHandler({
     detail: { 'player-name': playerName },
   }: CustomEvent<PlayerLoginEvent>) {
     eventSource?.close()
@@ -49,7 +49,7 @@
     })
   }
 
-  function createGame({
+  function createGameEventHandler({
     detail: {
       'game-initiator-player-name': gameInitiatorPlayerName,
       'game-initiator-player-position': gameInitiatorPlayerPosition,
@@ -85,7 +85,7 @@
       })
   }
 
-  function joinGame({
+  function joinGameEventHandler({
     detail: {
       'game-initiator-player-name': gameInitiatorPlayerName,
       'joining-player-name': joiningPlayerName,
@@ -134,9 +134,9 @@
 
 {#if activeComponent == ActiveComponent.Hub}
   <GameHub
-    on:player-login={playerLogin}
-    on:create-game={createGame}
-    on:join-game={joinGame}
+    on:player-login={playerLoginEventHandler}
+    on:create-game={createGameEventHandler}
+    on:join-game={joinGameEventHandler}
   />
 {:else if activeComponent == ActiveComponent.GameBoard}
   <GameBoard
