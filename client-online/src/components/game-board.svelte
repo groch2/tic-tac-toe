@@ -8,16 +8,13 @@
   import type { PlayGameRequest } from '../../../server/play-game-request'
   import { PlayerEndOfGameStatus } from '../../../server/player-end-of-game-status'
   import type { QuitGameRequest } from '../../../server/quit-game-request'
-  import { BoardComponentDisplayCause } from '../custom-types'
 
   export let gameInitiatorPlayerName: string
   export let playerName: string
-  export let isGameActive = false
-  export let boardComponentDisplayCause: BoardComponentDisplayCause
   export let eventSource: EventSource
+  let isGameActive = false
 
   function bindToGameBeginningEvent(eventSource: EventSource) {
-    console.debug('game begining event is bound')
     eventSource.addEventListener('game-beginning', (event) => {
       console.debug('game begining event...')
       const { 'opponent-player-name': opponentPlayerName } = JSON.parse(
@@ -26,6 +23,7 @@
       console.log(`playing against: "${opponentPlayerName}"`)
       isGameActive = true
     })
+    console.debug('game begining event is bound')
   }
 
   function bindToPlayGameEvent(eventSource: EventSource) {
@@ -40,10 +38,10 @@
       game = game
       isGameActive = true
     })
+    console.debug('play game event is bound')
   }
 
   function bindToEndOfGameEvent(eventSource: EventSource) {
-    console.log('binding to end of game event')
     eventSource.addEventListener('end-of-game', (event) => {
       console.log('end of game event received')
       const {
@@ -59,6 +57,7 @@
       )
       isGameActive = false
     })
+    console.log('end of game event is bound')
   }
 
   const newGame = () => {
@@ -140,8 +139,6 @@
   let cells: HTMLCollection
   onMount(() => {
     cells = document.querySelector('div.board').children
-    isGameActive =
-      boardComponentDisplayCause === BoardComponentDisplayCause.JoinExistingGame
     bindToGameBeginningEvent(eventSource)
     bindToPlayGameEvent(eventSource)
     bindToEndOfGameEvent(eventSource)

@@ -37,7 +37,9 @@ function sendEvent(
   event: string,
   data: any
 ) {
+  console.debug(`sending event: ${event}`)
   playerConnection.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+  console.debug('event sent')
 }
 
 app.get('/player/login', (request, response) => {
@@ -106,6 +108,12 @@ app.post('/game/join', (request, response) => {
       gameInitiatorPlayerName
     ) as number) + 1
   )
+  console.debug({
+    'game-initiator-player-name': gameInitiatorPlayerName,
+    'nb-players': nbActivePlayersByGameInitiatorPlayerName.get(
+      gameInitiatorPlayerName
+    ),
+  })
   if (game.isComplete) {
     console.debug(
       `the game initiated by: "${game.initiatorPlayerName}" is player complete`

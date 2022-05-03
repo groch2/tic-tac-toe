@@ -1,20 +1,22 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte'
   import type { CreateGameRequest } from '../../server/create-game-request'
-  import type { GameBeginningEvent } from '../../server/game-beginning-event'
   import type { JoinGameRequest } from '../../server/join-game-request'
   import GameBoard from './components/game-board.svelte'
   import GameHub from './components/game-hub.svelte'
   import type { CreateGameEvent } from './custom-events/create-game'
   import type { JoinGameEvent } from './custom-events/join-game'
   import type { PlayerLoginEvent } from './custom-events/player-login'
-  import { BoardComponentDisplayCause } from './custom-types'
 
-  let boardComponentDisplayCause: BoardComponentDisplayCause = null
+  enum ActiveComponent {
+    Hub,
+    GameBoard,
+  }
+
   let eventSource: EventSource
-  let activeGameComponent: typeof GameHub | typeof GameBoard = GameHub
   let _gameInitiatorPlayerName: string = null
   let _playerName: string = null
+  let activeComponent = ActiveComponent.Hub
 
   function playerLogin({
     detail: { 'player-name': playerName },
@@ -30,8 +32,13 @@
       console.log(`event source error`)
     }
     eventSource.onmessage = (eventMessage) => {
-      console.debug({ 'event-source-message': eventMessage })
+      console.debug('in App.svelte component', {
+        'event-source-message': eventMessage,
+      })
     }
+    eventSource.addEventListener('game-beginning', (event) => {
+      console.debug('in App.svelte component', 'game begining event...')
+    })
     console.debug({
       'event-source-state': ((eventSourceState) =>
         new Map<number, string>([
@@ -69,10 +76,9 @@
             'status-text': response.statusText,
           },
         })
-        boardComponentDisplayCause = BoardComponentDisplayCause.CreateNewGame
         _gameInitiatorPlayerName = gameInitiatorPlayerName
         _playerName = _gameInitiatorPlayerName
-        activeGameComponent = GameBoard
+        activeComponent = ActiveComponent.GameBoard
       })
       .catch((error) => {
         console.error('Error:', error)
@@ -105,10 +111,9 @@
             'status-text': response.statusText,
           },
         })
-        boardComponentDisplayCause = BoardComponentDisplayCause.JoinExistingGame
         _gameInitiatorPlayerName = gameInitiatorPlayerName
         _playerName = joiningPlayerName
-        activeGameComponent = GameBoard
+        activeComponent = ActiveComponent.GameBoard
       })
       .catch((error) => {
         console.error('Error:', error)
@@ -116,7 +121,7 @@
   }
 
   function quitGameEventHandler() {
-    activeGameComponent = GameHub
+    activeComponent = ActiveComponent.Hub
   }
   onMount(() => {
     document.addEventListener('quit-game', quitGameEventHandler)
@@ -127,14 +132,17 @@
   })
 </script>
 
-<svelte:component
-  this={activeGameComponent}
-  on:player-login={playerLogin}
-  on:create-game={createGame}
-  on:join-game={joinGame}
-  on:quit-game={quitGameEventHandler}
-  bind:boardComponentDisplayCause
-  bind:playerName={_playerName}
-  bind:gameInitiatorPlayerName={_gameInitiatorPlayerName}
-  bind:eventSource
-/>
+{#if activeComponent == ActiveComponent.Hub}
+  <GameHub
+    on:player-login={playerLogin}
+    on:create-game={createGame}
+    on:join-game={joinGame}
+  />
+{:else if activeComponent == ActiveComponent.GameBoard}
+  <GameBoard
+    on:quit-game={quitGameEventHandler}
+    bind:gameInitiatorPlayerName={_gameInitiatorPlayerName}
+    bind:playerName={_playerName}
+    bind:eventSource
+  />
+{/if}
