@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte'
+  import { onDestroy,onMount } from 'svelte'
   import type { PlayerPosition } from '../../game-engine/game-engine'
   import type { CreateGameRequest } from '../../server/create-game-request'
   import type { JoinGameRequest } from '../../server/join-game-request'
+  import config from '../app-config.json'
   import GameBoard from './components/game-board.svelte'
   import GameHub from './components/game-hub.svelte'
   import type { CreateGameEvent } from './custom-events/create-game'
@@ -26,7 +27,7 @@
   }: CustomEvent<PlayerLoginEvent>) {
     eventSource?.close()
     eventSource = new EventSource(
-      `http://localhost:3000/player/login?player-name=${playerName}`
+      `${config.webApiBaseUrl}/player/login?player-name=${playerName}`
     )
     eventSource.onopen = () => {
       console.log('event source opened')
@@ -53,7 +54,7 @@
     if (eventSource?.readyState !== EventSource.OPEN) {
       throw new Error('player is not logged in')
     }
-    fetch('http://localhost:3000/game/create', {
+    fetch(`${config.webApiBaseUrl}/game/create`, {
       method: 'POST',
       cache: 'no-cache',
       headers: {
@@ -85,7 +86,7 @@
       'joining-player-position': joiningPlayerPosition,
     },
   }: CustomEvent<JoinGameEvent>) {
-    fetch('http://localhost:3000/game/join', {
+    fetch(`${config.webApiBaseUrl}/game/join`, {
       method: 'POST',
       cache: 'no-cache',
       headers: {

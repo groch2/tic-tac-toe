@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte'
+  import { createEventDispatcher,onMount } from 'svelte'
   import {
-    GameEngine as Game,
-    PlayerPosition,
+  GameEngine as Game,
+  PlayerPosition
   } from '../../../game-engine/game-engine'
   import { getRandomWord } from '../../../game-engine/utils'
   import type { EndOfGamePlayerNotification } from '../../../server/end-of-game-player-notification'
@@ -11,6 +11,7 @@
   import type { PlayGameRequest } from '../../../server/play-game-request'
   import { PlayerEndOfGameStatus } from '../../../server/player-end-of-game-status'
   import type { QuitGameRequest } from '../../../server/quit-game-request'
+  import config from '../../app-config.json'
 
   export let playerName: string
   export let playerPosition: PlayerPosition = null
@@ -85,7 +86,7 @@
   const onCellClick = (cell: HTMLElement, index: number) => {
     if (game.isGameOver || game.isCellOccupied(index) || turn !== Turn.Player)
       return
-    fetch('http://localhost:3000/game/play', {
+    fetch(`${config.webApiBaseUrl}/game/play`, {
       method: 'POST',
       cache: 'no-cache',
       headers: {
@@ -117,7 +118,7 @@
 
   const dispatchEvent = createEventDispatcher()
   function quit() {
-    fetch('http://localhost:3000/game/quit', {
+    fetch(`${config.webApiBaseUrl}/game/quit`, {
       method: 'POST',
       cache: 'no-cache',
       headers: {

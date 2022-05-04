@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte'
   import { PlayerPosition } from '../../../game-engine/game-engine'
   import { getRandomWord } from '../../../game-engine/utils'
+  import config from '../../app-config.json'
   import type { CreateGameEvent } from '../custom-events/create-game'
   import type { JoinGameEvent } from '../custom-events/join-game'
 
@@ -37,7 +38,7 @@
   }
 
   function onClickRefreshGamesList() {
-    fetch('http://localhost:3000/games/pending', {
+    fetch(`${config.webApiBaseUrl}/games/pending`, {
       method: 'GET',
     })
       .then((response) => {
