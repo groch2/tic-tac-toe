@@ -88,7 +88,11 @@
           break
         case PlayerEndOfGameStatus.DRAW:
           endOfGameMessage = 'Draw game'
-        default:
+          break
+        case PlayerEndOfGameStatus.WINNER:
+          endOfGameMessage = `You win${
+            isEndOfGameByForfeit ? ' by opponent forfeit' : ''
+          }`
           break
       }
     })

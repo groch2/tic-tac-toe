@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy,onMount } from 'svelte'
+  import { onDestroy } from 'svelte'
   import type { PlayerPosition } from '../../game-engine/game-engine'
   import type { CreateGameRequest } from '../../server/create-game-request'
   import type { JoinGameRequest } from '../../server/join-game-request'
@@ -115,11 +115,7 @@
   function quitGameEventHandler() {
     activeComponent = ActiveComponent.Hub
   }
-  onMount(() => {
-    document.addEventListener('quit-game', quitGameEventHandler)
-  })
   onDestroy(() => {
-    document.removeEventListener('quit-game', quitGameEventHandler)
     eventSource?.close()
   })
 </script>
