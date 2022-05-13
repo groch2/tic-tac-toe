@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
   import type { PlayerPosition } from '../../game-engine/game-engine'
   import type { CreateGameRequest } from '../../server/create-game-request'
   import type { JoinGameRequest } from '../../server/join-game-request'
@@ -31,6 +31,7 @@
     )
     eventSource.onopen = () => {
       console.log('event source opened')
+      sessionStorage.setItem('player-name', playerName)
     }
     eventSource.onerror = () => {
       console.log(`event source error`)

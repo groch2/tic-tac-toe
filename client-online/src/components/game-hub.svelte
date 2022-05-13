@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { createEventDispatcher } from 'svelte'
   import { PlayerPosition } from '../../../game-engine/game-engine'
   import { getRandomWord } from '../../../game-engine/utils'
@@ -7,7 +8,6 @@
   import type { JoinGameEvent } from '../custom-events/join-game'
 
   let playerName = getRandomWord(10)
-  let newGameName = ''
   let _pendingGamesInitiatorsPlayersNames: Set<string> = new Set()
   let hasJoined = false
   let selectedGame = ''
@@ -18,7 +18,6 @@
       'player-name': playerName,
     })
     hasJoined = true
-    newGameName = getRandomWord(10)
     onClickRefreshGamesList()
   }
 
@@ -64,6 +63,14 @@
         console.error('Error:', error)
       })
   }
+
+  onMount(() => {
+    const playerNameFromSession = sessionStorage.getItem('player-name')
+    if (playerNameFromSession !== null) {
+      playerName = playerNameFromSession
+      onClickPlayerLogin()
+    }
+  })
 </script>
 
 <div class="main-container">
@@ -83,9 +90,7 @@
   <button
     on:click={onClickCreateGame}
     style="grid-column: 2 / 2; grid-row: 3 / 3"
-    disabled={!hasJoined ||
-      _pendingGamesInitiatorsPlayersNames.has(newGameName)}
-    >Create a new game</button
+    disabled={!hasJoined}>Create a new game</button
   >
   <label for="new-game-name" style="grid-column: 1 / span 2; grid-row: 4 / 4"
     >Join a game</label
