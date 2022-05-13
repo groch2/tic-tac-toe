@@ -42,7 +42,7 @@ export class GameEngine {
   private _isPlayerX_Winning = false
   public get isPlayerX_Winning() {
     if (!this._isPlayerX_Winning) {
-      this._isPlayerX_Winning = this.isPlayerWinning(PlayerPosition.O)
+      this._isPlayerX_Winning = this.isPlayerWinning(PlayerPosition.X)
     }
     return this._isPlayerX_Winning
   }

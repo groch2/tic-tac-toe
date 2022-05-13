@@ -61,6 +61,9 @@
 
   function bindToEndOfGameEvent(eventSource: EventSource) {
     eventSource.addEventListener('end-of-game', (event) => {
+      if (game.isGameOver || isGameOver) {
+        return
+      }
       const {
         'player-end of-game-status': playerEndOfGameStatus,
         'is-end-of-game-by-forfeit': isEndOfGameByForfeit,
@@ -107,7 +110,12 @@
 
   let game = newGame()
   const onCellClick = (cell: HTMLElement, index: number) => {
-    if (game.isGameOver || game.isCellOccupied(index) || turn !== Turn.Player)
+    if (
+      game.isGameOver ||
+      isGameOver ||
+      game.isCellOccupied(index) ||
+      turn !== Turn.Player
+    )
       return
     fetch(`${config.webApiBaseUrl}/game/play`, {
       method: 'POST',
@@ -135,7 +143,7 @@
               (playerPosition === PlayerPosition.O && game.isPlayerO_Winning) ||
               (playerPosition === PlayerPosition.X && game.isPlayerX_Winning)
             ) {
-              endOfGameMessage = 'You won'
+              endOfGameMessage = 'You win'
             }
           }
         } else {
