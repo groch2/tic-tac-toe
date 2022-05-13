@@ -159,9 +159,44 @@ app.post('/game/play', (request, response) => {
   }
   const previousPlayer = game.currentPlayer
   game.play(cellIndex)
-  const nextPlayerGameEvent: PlayGameEvent = {
-    'previous-player': previousPlayer,
-    'cell-index-played': cellIndex,
+  if (game.isDraw) {
+    const previousPlayerName = game.getPlayerNameByPosition(
+      previousPlayer === PlayerPosition.O ? PlayerPosition.X : PlayerPosition.O
+    )
+    const previousPlayerConnection =
+      connectionsByPlayerName.get(previousPlayerName)
+    if (previousPlayerConnection === undefined) {
+      throw new Error(
+        `the connection for player: "${previousPlayerName}" cannot be found`
+      )
+    }
+    sendEvent(previousPlayerConnection, 'end-of-game', {
+      'player-end of-game-status': PlayerEndOfGameStatus.DRAW,
+      'is-end-of-game-by-forfeit': false,
+      'last-cell-index-played': cellIndex,
+      'is-draw-game': true,
+    } as EndOfGamePlayerNotification)
+    console.log('sending draw game event')
+    response.sendStatus(200).end()
+    return
+  }
+  if (game.isGameOver) {
+    const loserPlayerConnection = connectionsByPlayerName.get(
+      game.loserPlayerName
+    )
+    if (loserPlayerConnection === undefined) {
+      throw new Error(
+        `the connection for player: "${game.loserPlayerName}" cannot be found`
+      )
+    }
+    sendEvent(loserPlayerConnection, 'end-of-game', {
+      'player-end of-game-status': PlayerEndOfGameStatus.LOSER,
+      'is-end-of-game-by-forfeit': false,
+      'last-cell-index-played': cellIndex,
+      'is-draw-game': false,
+    } as EndOfGamePlayerNotification)
+    response.sendStatus(200).end()
+    return
   }
   const nextPlayerConnection = connectionsByPlayerName.get(
     game.currentPlayerName
@@ -171,7 +206,11 @@ app.post('/game/play', (request, response) => {
       `the connection for player: "${game.currentPlayerName}" cannot be found`
     )
   }
-  sendEvent(nextPlayerConnection, 'play-game', nextPlayerGameEvent)
+  const playGameEvent: PlayGameEvent = {
+    'previous-player': previousPlayer,
+    'cell-index-played': cellIndex,
+  }
+  sendEvent(nextPlayerConnection, 'play-game', playGameEvent)
   response.sendStatus(200).end()
 })
 
@@ -195,6 +234,8 @@ app.post('/game/quit', (request, response) => {
     sendEvent(winnerConnection, 'end-of-game', {
       'player-end of-game-status': PlayerEndOfGameStatus.WINNER,
       'is-end-of-game-by-forfeit': true,
+      'last-cell-index-played': null,
+      'is-draw-game': false,
     } as EndOfGamePlayerNotification)
   }
   let nbActivePlayers = nbActivePlayersByGameInitiatorPlayerName.get(

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { createEventDispatcher,onMount } from 'svelte'
+  import { createEventDispatcher, onMount } from 'svelte'
   import {
-  GameEngine as Game,
-  PlayerPosition
+    GameEngine as Game,
+    PlayerPosition,
   } from '../../../game-engine/game-engine'
   import { getRandomWord } from '../../../game-engine/utils'
   import type { EndOfGamePlayerNotification } from '../../../server/end-of-game-player-notification'
@@ -33,6 +33,8 @@
       : playerPosition === PlayerPosition.O
       ? PlayerPosition.X
       : PlayerPosition.O
+  let isGameOver = false
+  let endOfGameMessage = ''
 
   function bindToGameBeginningEvent(eventSource: EventSource) {
     eventSource.addEventListener('game-beginning', (event) => {
@@ -59,19 +61,36 @@
 
   function bindToEndOfGameEvent(eventSource: EventSource) {
     eventSource.addEventListener('end-of-game', (event) => {
-      console.log('end of game event received')
       const {
         'player-end of-game-status': playerEndOfGameStatus,
         'is-end-of-game-by-forfeit': isEndOfGameByForfeit,
+        'last-cell-index-played': lastCellIndexPlayed,
       } = JSON.parse(event.data) as EndOfGamePlayerNotification
+      console.log('end of game event')
+      console.log(event.data)
+      if (
+        !isEndOfGameByForfeit &&
+        playerEndOfGameStatus === PlayerEndOfGameStatus.LOSER
+      ) {
+        game.play(lastCellIndexPlayed)
+        cells[lastCellIndexPlayed].innerHTML = opponentPlayerPosition
+      }
       console.log(
-        `You ${
-          playerEndOfGameStatus === PlayerEndOfGameStatus.WINNER
-            ? 'won'
-            : 'lost'
-        } by opponent ${isEndOfGameByForfeit ? 'forfeit' : 'defeat'}`
+        playerEndOfGameStatus === PlayerEndOfGameStatus.WINNER
+          ? `You win by opponent ${isEndOfGameByForfeit ? 'forfeit' : 'defeat'}`
+          : 'You lose'
       )
       turn = null
+      isGameOver = true
+      switch (playerEndOfGameStatus) {
+        case PlayerEndOfGameStatus.LOSER:
+          endOfGameMessage = 'You lose'
+          break
+        case PlayerEndOfGameStatus.DRAW:
+          endOfGameMessage = 'Draw game'
+        default:
+          break
+      }
     })
   }
 
@@ -104,6 +123,17 @@
           game.play(index)
           game = game
           turn = Turn.Opponent
+          if (game.isGameOver) {
+            if (game.isDraw) {
+              endOfGameMessage = 'Draw game'
+            }
+            if (
+              (playerPosition === PlayerPosition.O && game.isPlayerO_Winning) ||
+              (playerPosition === PlayerPosition.X && game.isPlayerX_Winning)
+            ) {
+              endOfGameMessage = 'You won'
+            }
+          }
         } else {
           console.log('Network error on play request', {
             'response-status': response.status,
@@ -187,7 +217,9 @@
   </table>
   <div
     class="board"
-    class:disabled-board={!isGameStarted || turn === Turn.Opponent}
+    class:disabled-board={!isGameStarted ||
+      turn === Turn.Opponent ||
+      isGameOver}
   >
     {#each new Array(9).fill(0) as _, index}
       <div on:click={(event) => onCellClick(event.currentTarget, index)} />
@@ -198,13 +230,7 @@
   </div>
   <button on:click={quit} style="width:fit-content"> Quit </button>
   <span>
-    {#if game.isPlayerO_Winning}
-      Player O as won !
-    {:else if game.isPlayerX_Winning}
-      Player X as won !
-    {:else if game.isDraw}
-      Draw game...
-    {/if}
+    {endOfGameMessage}
   </span>
 </div>
 

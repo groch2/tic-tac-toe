@@ -32,11 +32,19 @@ export class GameEngine {
       this.axeValues(axe).every((value) => value === player)
     )
   }
+  private _isPlayerO_Winning = false
   public get isPlayerO_Winning() {
-    return this.isPlayerWinning(PlayerPosition.O)
+    if (!this._isPlayerO_Winning) {
+      this._isPlayerO_Winning = this.isPlayerWinning(PlayerPosition.O)
+    }
+    return this._isPlayerO_Winning
   }
+  private _isPlayerX_Winning = false
   public get isPlayerX_Winning() {
-    return this.isPlayerWinning(PlayerPosition.X)
+    if (!this._isPlayerX_Winning) {
+      this._isPlayerX_Winning = this.isPlayerWinning(PlayerPosition.O)
+    }
+    return this._isPlayerX_Winning
   }
   public get isDraw() {
     return (
@@ -51,7 +59,9 @@ export class GameEngine {
   }
   public get currentPlayerName(): string {
     return (
-      this.currentPlayer === PlayerPosition.O ? this.playerO_Name : this.playerX_Name
+      this.currentPlayer === PlayerPosition.O
+        ? this.playerO_Name
+        : this.playerX_Name
     ) as string
   }
   public get isComplete(): boolean {
@@ -69,7 +79,10 @@ export class GameEngine {
       this._isGameOver = true
       return
     }
-    this._currentPlayer = this._currentPlayer === PlayerPosition.O ? PlayerPosition.X : PlayerPosition.O
+    this._currentPlayer =
+      this._currentPlayer === PlayerPosition.O
+        ? PlayerPosition.X
+        : PlayerPosition.O
   }
   private _isGameOver = false
   public get isGameOver() {
@@ -80,11 +93,43 @@ export class GameEngine {
   }
   public getPlayerNameByPosition(playerPosition: PlayerPosition) {
     return (
-      playerPosition === PlayerPosition.O ? this.playerO_Name : this.playerX_Name
+      playerPosition === PlayerPosition.O
+        ? this.playerO_Name
+        : this.playerX_Name
     ) as string
   }
   public getPlayerPositionByName(playerName: string) {
-    return playerName === this.playerO_Name ? PlayerPosition.O : PlayerPosition.X
+    return playerName === this.playerO_Name
+      ? PlayerPosition.O
+      : PlayerPosition.X
+  }
+  public get winnerPlayerName() {
+    if (!this.isGameOver) {
+      throw new Error(ErrorMessages.GAME_NOT_OVER_YET_NO_WINNER)
+    }
+    if (this.isDraw) {
+      throw new Error(ErrorMessages.GAME_IS_DRAW_NO_WINNER)
+    }
+    return (
+      this.isPlayerO_Winning ? this.playerO_Name : this.playerX_Name
+    ) as string
+  }
+  public get winnerPlayerPosition() {
+    return this.getPlayerPositionByName(this.winnerPlayerName)
+  }
+  public get loserPlayerName() {
+    if (!this.isGameOver) {
+      throw new Error(ErrorMessages.GAME_NOT_OVER_YET_NO_LOSER)
+    }
+    if (this.isDraw) {
+      throw new Error(ErrorMessages.GAME_IS_DRAW_NO_LOSER)
+    }
+    return (
+      this.isPlayerO_Winning ? this.playerX_Name : this.playerO_Name
+    ) as string
+  }
+  public get loserPlayerPosition() {
+    return this.getPlayerPositionByName(this.loserPlayerName)
   }
   toJSON() {
     return Object.fromEntries(
@@ -106,4 +151,12 @@ export class ErrorMessages {
   public static readonly GAME_OVER = 'La partie est déjà terminée'
   public static readonly CELL_ALREADY_OCCUPIED =
     'Cet emplacement a déjà été joué'
+  public static readonly GAME_NOT_OVER_YET_NO_WINNER =
+    'the game is not over yet, and thus there is no winner player yet'
+  public static readonly GAME_IS_DRAW_NO_WINNER =
+    'this game is over by draw, and thus there is no winner player'
+  public static readonly GAME_NOT_OVER_YET_NO_LOSER =
+    'the game is not over yet, and thus there is no loser player yet'
+  public static readonly GAME_IS_DRAW_NO_LOSER =
+    'this game is over by draw, and thus there is no loser player'
 }

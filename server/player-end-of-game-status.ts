@@ -1,4 +1,5 @@
 export enum PlayerEndOfGameStatus {
   WINNER,
-  LOOSER,
+  LOSER,
+  DRAW,
 }
