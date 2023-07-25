@@ -17,7 +17,26 @@
     game = game
   }
   let allCells: NodeListOf<Element>
-  onMount(() => (allCells = document.querySelectorAll('.board > div')))
+  let winningAxeCanvas: HTMLCanvasElement
+  onMount(() => {
+    allCells = document.querySelectorAll('.board > div')
+
+    winningAxeCanvas = document.getElementById(
+      'winning-axe-canvas'
+    ) as HTMLCanvasElement
+
+    const { height, width } = winningAxeCanvas
+
+    var ctx = winningAxeCanvas.getContext('2d')
+
+    ctx.moveTo(0, 0)
+    ctx.lineTo(width, height)
+
+    ctx.moveTo(width, 0)
+    ctx.lineTo(0, height)
+
+    ctx.stroke()
+  })
   const reset = () => {
     allCells.forEach((cell: HTMLElement) => (cell.innerText = ''))
     game = newGame()
@@ -25,7 +44,11 @@
 </script>
 
 <div class="root-container">
-  <div class="board">
+  <div class="board" style="position: relative;">
+    <canvas
+      id="winning-axe-canvas"
+      style="position: absolute; width: 100%; height: 100%; z-index: -1;"
+    />
     {#each new Array(9).fill(0) as _, index}
       <div on:click={(event) => onCellClick(event.currentTarget, index)} />
     {/each}
